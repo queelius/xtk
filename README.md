@@ -1,5 +1,7 @@
 # Expression Toolkit: `xtoolkit`
 
+Note: Broke some of the logic, will fix soon.
+
 ## Overview
 
 This project is a Python package that provides tools for expression rewriting,
