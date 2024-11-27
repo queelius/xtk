@@ -1,0 +1,70 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environment directories
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Conda environment files
+*.conda
+*.env
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Unit test / coverage reports
+.coverage
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# pyenv
+.python-version
+
+# MyPy
+.mypy_cache/
+
+# VS Code settings
+.vscode/
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Temporary files and folders
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*.orig
+*.DS_Store
+Thumbs.db
+
+# Python profiler
+*.prof
+
+# Local IDE settings
+.idea/
+
+# Other ignored files
+# Add any custom filenames you don't want tracked below
