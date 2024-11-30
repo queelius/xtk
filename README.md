@@ -379,15 +379,15 @@ DFS explores as far as possible along each branch before backtracking, making it
    # trigonometric_rules.py
    rules = [
        # Pythagorean identity
-       [['+', ['^', ['sin', '?x'], 2], ['^', ['cos', '?x'], 2]], 1],
+       [['+', ['^', ['sin', ['?','x']], 2], ['^', ['cos', ['?','x']], 2]], 1],
        # Expand sine squared
-       [['^', ['sin', '?x'], 2], ['-', 1, ['^', ['cos', '?x'], 2]]],
+       [['^', ['sin', ['?','x']], 2], ['-', 1, ['^', ['cos', [':','x']], 2]]],
        # Expand cosine squared
-       [['^', ['cos', '?x'], 2], ['-', 1, ['^', ['sin', '?x'], 2]]],
+       [['^', ['cos', ['?','x']], 2], ['-', 1, ['^', ['sin', [':','x']], 2]]],
        # Sine double angle
-       [['sin', ['*', 2, '?x']], ['*', 2, ['sin', '?x'], ['cos', '?x']]],
+       [['sin', ['*', 2, ['?','x']]], ['*', 2, ['sin', [':','x']], ['cos', [':','x']]]],
        # Cosine double angle
-       [['cos', ['*', 2, '?x']], ['-', ['^', ['cos', '?x'], 2], ['^', ['sin', '?x'], 2]]],
+       [['cos', ['*', 2, ['?','x']]], ['-', ['^', ['cos', [':','x']], 2], ['^', ['sin', [':','x']], 2]]],
        # Other relevant identities...
    ]
    ```
@@ -443,11 +443,14 @@ Best-First Search uses a heuristic to prioritize exploration, making it efficien
    # algebraic_rules.py
    rules = [
        # Difference of squares
-       [['-', ['^', '?x', 2], ['^', '?y', 2]], ['*', ['+', '?x', '?y'], ['-', '?x', '?y']]],
+       [['-', ['^', ['?', 'x'], 2], ['^', ['?','y'], 2]],
+        ['*', ['+', [':','x'], [':','y']], ['-', [':','x'], [':','y']]]],
        # Expand multiplication
-       [['*', ['+', '?a', '?b'], ['+', '?c', '?d']], ['+', ['*', '?a', '?c'], ['*', '?a', '?d'], ['*', '?b', '?c'], ['*', '?b', '?d']]],
+       [['*', ['+', ['?','a'], ['?','b']], ['+', ['?','c'], ['?','d']]],
+        ['+', ['*', [':','a'], [':','c']], ['*', [':','a'], [':','d']], ['*', [':','b'], [':','c']], ['*', [':','b'], [':','d']]]],
        # Simplify exponents
-       [['^', ['^', '?x', '?m'], '?n'], ['^', '?x', ['*', '?m', '?n']]],
+       [['^', ['^', ['?','x'], ['?','m']], ['?','n']],
+        ['^', [':','x'], ['*', [':','m', [':','n']]]],
        # ... other algebraic rules
    ]
    ```
