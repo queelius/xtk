@@ -1,199 +1,368 @@
 # Expression Toolkit: `xtoolkit`
 
-Note: Broke some of the logic, will fix soon.
+A rules-based expression rewriting toolkit for symbolic computation.
 
-## Overview
+## Introduction
 
-This project is a Python package that provides tools for expression rewriting,
-including pattern matching, rule-based transformations (which may sometimes
-be considered simplifications, but it depends on the rules), and evaluation of
-expressions.
+`xtoolkit` is a Python package that provides tools for symbolic computation through expression rewriting. It offers capabilities such as pattern matching, rule-based transformations, expression evaluation, theorem proving via tree search, and data generation for AI and machine learning applications.
 
-The package includes:
+## Quick Start
 
-- An expression rewriting engine in `xtoolkit/rewriter.py`, which provides functions for matching patterns, instantiating expressions, evaluating forms, and simplifying expressions using transformation rules.
-- A set of predefined mathematical rules in `xtoolkit/rules/` for basic algebra, calculus, trigonometry, etc.
-- Jupyter notebooks in `notebooks/` that demonstrate and test the functionality of the package.
+To quickly get started with `xtoolkit`, follow these steps:
+
+1. **Installation**:
+
+   Install `xtoolkit` from PyPI:
+
+   ```sh
+   pip install xtoolkit
+   ```
+
+2. **Basic Usage**:
+
+   Here's a simple example of how to use `xtoolkit` to simplify an expression:
+
+   ```python
+   from xtoolkit import simplifier
+
+   # Define a simplification rule: x + 0 => x
+   rules = [
+       [['+', ['?', 'x'], 0], [':', 'x']]
+   ]
+
+   # Create a simplifier function using the rule
+   simplify = simplifier(rules)
+
+   # Simplify an expression
+   expr = ['+', 'a', 0]
+   result = simplify(expr)
+   print(f"Simplified expression: {result}")  # Output: Simplified expression: a
+   ```
+
+3. **Exploring More Features**:
+
+   To explore more advanced features like symbolic differentiation, tree search algorithms for theorem proving, and working with predefined mathematical rules, refer to the detailed sections below.
+
+## Table of Contents
+
+- [Expression Toolkit: `xtoolkit`](#expression-toolkit-xtoolkit)
+  - [Introduction](#introduction)
+  - [Quick Start](#quick-start)
+  - [Table of Contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Overview](#overview)
+  - [Representation of Rules and Expressions](#representation-of-rules-and-expressions)
+    - [Rewrite Rules: Pattern Matching and Skeleton Instantiation](#rewrite-rules-pattern-matching-and-skeleton-instantiation)
+      - [Abstract Syntax Tree (AST) Representation](#abstract-syntax-tree-ast-representation)
+        - [Examples](#examples)
+      - [Simplified Domain-Specific Language (DSL)](#simplified-domain-specific-language-dsl)
+      - [Alternative JSON Representation](#alternative-json-representation)
+    - [Expressions](#expressions)
+  - [Pattern Matching](#pattern-matching)
+  - [Skeleton Instantiation](#skeleton-instantiation)
+  - [Evaluation](#evaluation)
+    - [Example: Evaluating Expressions](#example-evaluating-expressions)
+  - [Simplification Process](#simplification-process)
+    - [The Simplification Process](#the-simplification-process)
+    - [Example: Simplifying Expressions](#example-simplifying-expressions)
+      - [Steps:](#steps)
+      - [Example with Evaluation](#example-with-evaluation)
+  - [Tree Search and Theorem Proving](#tree-search-and-theorem-proving)
+    - [Search Algorithms](#search-algorithms)
+  - [Modules](#modules)
+    - [Core Modules](#core-modules)
+    - [Search Modules](#search-modules)
+  - [Predefined Rewrite Rules](#predefined-rewrite-rules)
+  - [Notebooks and Examples](#notebooks-and-examples)
+  - [The Power of Language Design](#the-power-of-language-design)
 
 ## Installation
 
-To install the package locally, navigate to the root directory and run:
+To install the package locally from the source code:
 
 ```sh
+git clone https://github.com/queelius/xtoolkit
+cd xtoolkit
 pip install -e .
 ```
 
-## Usage
+To install it from PyPI:
 
-Here are some examples of how to use the package.
-
-### Simplifier
-
-You can use the `simplifier` function from `xtoolkit/rewriter.py` to simplify mathematical expressions based on a set of transformation rules.
-
-#### Example: Simplifying Derivatives
-
-Consider the rule for the derivative of a constant, $d/dx c = 0$ where $c$ is
-a constant with respect to $x$. This rule can be represented as:
-
-```python
-[['dd', ['?c', 'c'], ['?v', 'v']], 0]
+```sh
+pip install xtoolkit
 ```
 
-Using this rule, we can simplify the derivative of a constant expression:
+## Overview
 
-```python
-from exprtoolkit.rewriter import simplifier
+`xtoolkit` provides a comprehensive set of tools for symbolic computation:
 
-# Define the rule
-rules = [
-    [['dd', ['?c', 'c'], ['?v', 'v']], 0]
-]
+- **Expression Rewriting Engine** (`xtoolkit/rewriter.py`): Functions for pattern matching, expression instantiation, evaluation, and simplification using transformation rules.
 
-# Create the simplifier function
-simplify = simplifier(rules)
+- **Simplifier** (`xtoolkit/simplifier.py`): A recursive simplifier that applies rewrite rules to expressions in a bottom-up manner, facilitating expression simplification.
 
-# Simplify the expression
-expr = ['dd', 3, 'x']
-result = simplify(expr)
-print(f"{expr} =>, {result}")
-# Output: ['dd', 3, 'x'] => 0
+- **Tree Search Algorithms** (`xtoolkit/search/`): Algorithms for theorem proving and exploring expression spaces, including BFS, DFS, IDDFS, Best-First Search, A\* Search, and Monte Carlo Tree Search.
+
+- **Predefined Mathematical Rules** (`xtoolkit/rules/`): A collection of rules for various mathematical domains such as algebra, calculus, trigonometry, limits, and more.
+
+- **Jupyter Notebooks** (`notebooks/`): Examples demonstrating the functionality of the package.
+
+## Representation of Rules and Expressions
+
+`xtoolkit` employs a powerful yet simple representation for rules and expressions, enabling efficient definition and manipulation of symbolic expressions.
+
+### Rewrite Rules: Pattern Matching and Skeleton Instantiation
+
+#### Abstract Syntax Tree (AST) Representation
+
+Rewrite rules are defined using an abstract syntax tree (AST) representation, utilizing nested lists to represent expressions. Each rule consists of:
+
+- **Pattern**: Defines the structure of the expression to match.
+- **Skeleton**: A template for the replacement expression.
+
+##### Examples
+
+1. **Simplification Rule**: The sum of a variable `x` and zero simplifies to `x`.
+
+   ```python
+   [['+', ['?', 'x'], 0], [':', 'x']]
+   ```
+
+   - **Pattern**: `['+', ['?', 'x'], 0]`
+   - **Skeleton**: `[':', 'x']`
+
+2. **Derivative of a Constant**: The derivative of a constant `c` with respect to `x` is zero, \( \frac{d}{dx} c = 0 \).
+
+   ```python
+   [['dd', ['?c', 'c'], ['?', 'x']], 0]
+   ```
+
+   - **Pattern**: `['dd', ['?c', 'c'], ['?', 'x']]`
+   - **Skeleton**: `0`
+
+#### Simplified Domain-Specific Language (DSL)
+
+For enhanced readability, `xtoolkit` offers a simplified DSL for writing rules:
+
+```text
+# Derivative of a constant: d(c)/dx = 0
+dd (?c c) (?v x) = 0
+
+# Derivative of a variable with respect to itself: d(x)/dx = 1
+dd (?v x) (?v x) = 1
+
+# Product rule: d(f * g)/dx = f' * g + f * g'
+dd (* (? f) (? g)) (?v x) =
+    (+ (* (dd (: f) (: x)) (: g))
+       (* (: f) (dd (: g) (: x))))
 ```
 
-Note that `['dd, ['?c', 'a'], ['?v', 'x']]` is a pattern that matches the
-derivative of a constant `a` with respect to variable `x`,
+In the DSL:
 
-$$
-dc/dv = 0
-$$
+- `?c c`: Matches any constant and binds it to `c`.
+- `?v x`: Matches any variable and binds it to `x`.
+- `? f`, `? g`: Match any expressions and bind them to `f` and `g`.
+- `:` is used in the skeleton to refer to matched variables from the pattern.
 
-where `?c` and `?v` respectively match constants and variables.
-Additionally, `?` matfches any expression. Thus, `[?c, 'a']` matches arbitrary
-constants, which we name `a`, `[?v, 'x']` matches arbitrary variables, which we
-name `x`, and `[? , 'e']` matches any expression that we name `e`.
+#### Alternative JSON Representation
 
-This is the AST representation of the rule. The rule itself is a list with two
-elements: the pattern and the skeleton replacement. The pattern is a list with the first
-element being the operator and the rest being the operands. The skeleton is
-a template for the replacement expression. More details later.
-
-A rule can also be a JSON object, which allows for attaching metadata
-to the rule. Here is the same rule as a JSON object:
+Rules can also be represented as JSON objects, allowing for additional metadata:
 
 ```json
 {
-    "pattern": ["dd", ["?c", "a"], ["?v", "x"]],
-    "replacement": 0,
-    "name": "derivative_of_constant",
-    "description": "The derivative of a constant is zero."
+  "pattern": ["dd", ["?c", "c"], ["?v", "x"]],
+  "replacement": 0,
+  "name": "derivative_of_constant",
+  "description": "The derivative of a constant is zero."
 }
 ```
 
-Furthermore, we provide a DSL for writing rules in a more human-readable format.
-Here are three rules in the DSL:
+### Expressions
 
-```text
-# d(c)/dx = 0 # dc/dx = 0
-(dd (?c a) (?v x)) = 0 # da/dx = 0
+Expressions are represented in the same AST format as rules:
 
-# d(x)/dx = 1 # dx/dx = 1
-(dd (?v x) (?v x)) = 1 # dx/dx = 1
+- `['+', 'x', 3]` represents \( x + 3 \).
+- `['*', ['+', 'x', 3], 4]` represents \( (x + 3) \times 4 \).
+- `['dd', ['*', 2, 'x'], 'x']` represents \( \frac{d}{dx} (2x) \).
 
-# d(f*g)/dx = f'g + fg'
-(dd (*
-    ((? f) (? g)) (?v x))
-    =
-(+ 
-    (* (dd (: f) (: x)) (: g))
-    (* (: f) (dd (: g) (: x))
-)
-```
+## Pattern Matching
 
-The LHS of `=` represents the pattern annd the RHS represents the replacement.
-`?c a`, `?v x`, and `? f` respectively map to `['?c', 'a']` and `['?v', 'x']`.
-In the last rule, we see replacement expressions that use `: f` and `: x` to
-refer to the matched expressions in the pattern. We substitute into the
-skeleton the matched expressions in the pattern,  e.g., if we have an expression
-`(* x (+ y x))`, then `? f` would match `x` and `? g` would match `(+ y x)`.
-In the skeleton, `: f` would be replaced by `x` and `: g` would be replaced by
-`(+ y x)`. The *instantiated* skeleton is thus `(+ (* (dd x x) (+ y x)) (* x (dd (+ y x) x)))`.
+Pattern matching is used to determine if a rule can be applied to an expression. The syntax includes:
 
-The DSL is more concise and easier to read than the AST representation, and it
-is converted to the AST representation before being used by the simplifier.
-You may want to use the AST (even the JSON version) if you need to
-programmatically generate or manipulate rules. The AST is also easier to
-serialize and deserialize for storage or transmission.
+- **Exact Match**: An expression `foo` matches exactly `foo`.
+- **List Match**: An expression `["f", "a", "b"]` matches a list with first element `"f"` and subsequent elements `"a"`, `"b"`.
+- **Pattern Variables**:
+  - `['?', 'x']`: Matches any expression and binds it to `x`.
+  - `['?c', 'c']`: Matches any constant and binds it to `c`.
+  - `['?v', 'x']`: Matches any variable and binds it to `x`.
 
-### Evaluator
+This pattern-matching system is simple yet powerful, allowing for flexible expression transformations.
 
-The `evaluate` function can evaluate expressions given a dictionary of values and operations.
-This is typically not used standalone, but as part of a larger system that uses the rewriter engine.
-However, it can be useful for simple evaluations.
+## Skeleton Instantiation
 
-#### Example: Evaluating Expressions
+After matching, the skeleton is instantiated by replacing pattern variables with the matched expressions:
+
+- **Direct Substitution**: `["f", "a", "b"]` remains unchanged.
+- **Variable Substitution**: `[':', 'x']` is replaced with the expression bound to `x`.
+
+For example, if `x` is bound to `3`, then `[':', 'x']` instantiates to `3`.
+
+## Evaluation
+
+The evaluator computes the value of instantiated skeleton expressions using a dictionary of bindings for operations and variables.
+
+### Example: Evaluating Expressions
 
 ```python
 from xtoolkit import evaluate
 
-# Define the dictionary
-dict1 = [
-    ['+', lambda x, y: x + y],
-    ['x', 3],
-    ['y', 4]
-]
+# Define the bindings
+bindings = {
+    '+': lambda x, y: x + y,
+    'x': 3,
+    'y': 4
+}
 
 # Evaluate the expression
-form1 = ['+', 'x', 'y']
-result = evaluate(form1, dict1)
-print(f"evaluate({form1}, {dict1}) => {result}")
-# Output: evaluate(['+', 'x', 'y'], [['+', <function <lambda>...>], ['x', 3], ['y', 4]]) => 7
+expr = ['+', 'x', 'y']
+result = evaluate(expr, bindings)
+print(f"evaluate({expr}, {bindings}) => {result}")
+# Output: evaluate(['+', 'x', 'y'], {'+': <function>, 'x': 3, 'y': 4}) => 7
 ```
 
-## AST Representation
+In this example:
 
-The Abstract Syntax Tree (AST) in this project represents expressions as nested lists. Here are some examples:
+- The evaluator replaces `'x'` and `'y'` with their values `3` and `4`.
+- It then applies the `+` operation to compute `7`.
 
-- `['+', 'x', 3]` represents the expression \( x + 3 \).
-- `['*', ['+', 'x', 0], 1]` represents \( (x + 0) \times 1 \).
-- `['dd', 'x', 'x']` represents the derivative \( \frac{d}{dx} x \).
+## Simplification Process
+
+Simplification involves recursively applying rewrite rules to an expression until it cannot be further reduced. The process works bottom-up, simplifying sub-expressions before moving up the expression tree.
+
+### The Simplification Process
+
+We can visualize the simplification process as follows:
+
+```mermaid
+graph TD
+    A0(( )) -->|Expression| A
+    B0(( )) -->|Pattern| A
+    C0(( )) -->|Bindings| A
+    D0(( )) -->|Skeleton| B
+    A[Matcher] -->|Augmented Bindings| B
+    B[Instantiator] -->|Instantiated Skeleton| C[Evaluator]
+    C -->|Simplified Expression| A
+
+    style A0 fill:none, stroke:none
+    style B0 fill:none, stroke:none
+    style C0 fill:none, stroke:none
+    style D0 fill:none, stroke:none
+```
+
+1. **Matcher**: Matches the pattern against the expression and generates bindings.
+2. **Instantiator**: Uses the bindings to instantiate the skeleton.
+3. **Evaluator**: Evaluates the instantiated skeleton to produce a simplified expression.
+4. **Recursive Application**: The process repeats until no further simplifications can be made.
+
+### Example: Simplifying Expressions
+
+**Simplify** `['+', 'x', 0]` using the rule that adding zero simplifies to the original expression.
+
+- **Rule**: `[['+', ['?', 'x'], 0], [':', 'x']]`
+
+#### Steps:
+
+1. **Match**:
+
+   - Pattern: `['+', ['?', 'x'], 0]`
+   - Expression: `['+', 'x', 0]`
+   - Binding: `{'x': 'x'}`
+
+2. **Instantiate**:
+
+   - Skeleton: `[':', 'x']`
+   - Instantiated Skeleton: `'x'`
+
+3. **Evaluate**:
+
+   - Result: `'x'`
+
+The expression simplifies from `['+', 'x', 0]` to `'x'`.
+
+#### Example with Evaluation
+
+Simplify `['+', 3, 5]` using the addition operation defined in the evaluator.
+
+- **Bindings**: `{'x': 3, 'y': 5, '+': lambda x, y: x + y}`
+
+- **Expression**: `['+', 'x', 'y']`
+
+- **Evaluate**:
+
+  - Replace `'x'` and `'y'` with `3` and `5`.
+  - Apply `+` operation: `3 + 5 = 8`.
+
+- **Result**: `8`
+
+## Tree Search and Theorem Proving
+
+Beyond simplification, `xtoolkit` provides tree search algorithms for tasks such as theorem proving, where the goal is to find a sequence of rewrites that transforms an expression into a target form.
+
+### Search Algorithms
+
+- **Breadth-First Search (BFS)**: Explores all nodes at the current depth before moving deeper.
+- **Depth-First Search (DFS)**: Explores as far as possible along each branch before backtracking.
+- **Iterative Deepening DFS (IDDFS)**: Combines DFS's space efficiency with BFS's completeness.
+- **Best-First Search**: Uses a heuristic to explore more promising branches first.
+- **A\* Search**: Combines path cost and heuristic information for optimal pathfinding.
+- **Monte Carlo Tree Search (MCTS)**: Uses randomness and statistical sampling to explore the search space.
+
+These algorithms can be used to prove equivalence between expressions, find transformations that satisfy certain conditions, or explore the space of possible rewrites.
 
 ## Modules
 
-### `rewriter.py`
+### Core Modules
 
-This module contains the core functions:
+- **`rewriter.py`**: Contains core functions for pattern matching, instantiation, and evaluation.
 
-- `match(pat, exp, dict)`
+  - `match(pattern, expression, bindings)`: Matches a pattern against an expression using the provided bindings.
+  - `instantiate(skeleton, bindings)`: Instantiates a skeleton using the bindings.
+  - `evaluate(expression, bindings)`: Evaluates an expression using the bindings.
 
-: Matches a pattern `pat` against an expression `exp` using a dictionary `dict`.
+- **`simplifier.py`**:
 
-- `instantiate(skeleton, dict)`
+  - `simplifier(rules)`: Returns a function to simplify expressions using the provided rules.
 
-: Instantiates a `skeleton` expression using the dictionary `dict`.
+### Search Modules
 
-- `evaluate(form, dict)`
+Each search algorithm is implemented in its own module under `search/`:
 
-: Evaluates an expression `form` using the dictionary `dict`.
+- **`bfs.py`**: Breadth-First Search
+- **`dfs.py`**: Depth-First Search
+- **`iddfs.py`**: Iterative Deepening DFS
+- **`best_first.py`**: Best-First Search
+- **`astar.py`**: A\* Search
+- **`mcts.py`**: Monte Carlo Tree Search
 
-- `simplifier(the_rules)`
+## Predefined Rewrite Rules
 
-: Returns a function to simplify expressions using `the_rules`
+The `rules/` directory contains predefined rules for various mathematical domains:
 
+- **`deriv_rules.py`**: Rules for symbolic differentiation.
+- **`trig_rules.py`**: Trigonometric identities.
+- **`limit_rules.py`**: Rules for computing limits.
+- **`random_var_rules.py`**: Manipulations of random variables.
+- **`integral_rules.py`**: Rules for integration.
+- **`calculus_rules.py`**: General calculus rules.
+- **`algebra_rules.py`**: Algebraic manipulation rules.
 
-### `xtoolkit/rules/`
+Additional rules cover domains such as differential equations, logic, set theory, combinatorics, graph theory, group theory, ring theory, field theory, vector spaces, linear algebra, topology, measure theory, probability theory, and statistics.
 
-This directory contains predefined rules for various mathematical operations:
+## Notebooks and Examples
 
-- `basic-algebra.py` have rules for basic algebraic operations.
-- `deriv-rules.py` have rules for symbolically taking derivatives.
-- `trig-rules.py` have rules for trigonometric functions.
-- etc.
+The `notebooks/` directory contains Jupyter notebooks demonstrating the functionality of `xtoolkit`, including examples of simplification, evaluation, and theorem proving.
 
-## Testing
+## The Power of Language Design
 
-The `notebooks` directory contains Jupyter notebooks that demonstrate and test
-the functionality:
+Designing a domain-specific language (DSL) enables expressing complex ideas concisely and readably. In `xtoolkit`, the DSL allows users to define transformation rules effectively, leveraging the power of symbolic computation and rule-based systems.
 
-## License
-
-This project is licensed under the MIT License.
+Our rules-based system is Turing-complete, capable of expressing any computable function. While powerful, such systems are better suited for symbolic computation, theorem proving, and other symbolic tasks rather than general-purpose programming.
