@@ -75,7 +75,7 @@ To quickly get started with `xtoolkit`, follow these steps:
   - [Using Tree Search Algorithms: DFS and Best-First Search](#using-tree-search-algorithms-dfs-and-best-first-search)
     - [Depth-First Search (DFS)](#depth-first-search-dfs)
       - [Example: Proving a Trigonometric Identity](#example-proving-a-trigonometric-identity)
-        - [Steps:](#steps-1)
+        - [Proof Steps](#proof-steps)
       - [Explanation](#explanation)
     - [Best-First Search](#best-first-search)
       - [Example: Simplifying an Algebraic Expression](#example-simplifying-an-algebraic-expression)
@@ -327,8 +327,47 @@ Beyond simplification, `xtoolkit` provides tree search algorithms for tasks such
 - **Best-First Search**: Uses a heuristic to explore more promising branches first.
 - **A\* Search**: Combines path cost and heuristic information for optimal pathfinding.
 - **Monte Carlo Tree Search (MCTS)**: Uses randomness and statistical sampling to explore the search space.
+- **Random Walk**: Randomly explores the search space without a specific strategy or goal. This can be useful for generating data or exploring the space of possible rewrites, e.g., instead of automatic theorem proving, we have automatic theorem generation.
 
 These algorithms can be used to prove equivalence between expressions, find transformations that satisfy certain conditions, or explore the space of possible rewrites.
+
+Note that for theorem proving, you may also just use the `simplifier` function with a set of rules to simplify an expression to its self-evaluating normal form, e.g., an expression like $\frac{x \times 1 + 0}{2}$, represented as
+
+  `['/', ['+', ['*', 'x', 1], 0], 2]` ,
+
+mwhich simplifies to its normal form `['/', 'x', 2]` under the following rules:
+
+- Rule 1: `['*', ['?','x'], 1], [':', 'x']`
+  
+- Rule 2: `['+', ['?', 'x'], 0], [':', 'x']`
+
+This assumes `x` is a free variable (not bound to a value in the bindings).
+
+Then, if we want to prove that $\frac{x \times 1 + 0}{2}$ and some other more complicated expression, $\frac{x \times 2}{4} + 5 - \frac{y \times 3}{y} \frac{5}{3}$, are equivalent, we can simplify both expressions to their normal forms and compare them. If they are the same, then the expressions are equivalent. If they are different, then the expressions are not equivalent.
+
+Note that if we track the steps of the simplification process, we can also provide a proof of equivalence. For example, the steps for the first expression would be:
+
+1. $\frac{x \times 1 + 0}{2}$ (original expression)
+2. $\frac{x + 0}{2}$ (from rule 1)
+3. $\frac{x}{2}$ (from rule 2)
+
+The steps for the second expression would be:
+
+1. $\frac{x \times 2}{4} + 5 - \frac{y \times 3}{y} \frac{5}{3}$ (original expression)
+
+2. $\frac{x}{2} + 5 - \frac{y \times 3}{y} \frac{5}{3}$ (from a rule that cancels like-terms in a fraction)
+
+4. $\frac{x}{2} + 5 - 3 \times \frac{5}{3}$ (from a rule that cancels like-terms in a fraction)
+
+5. $\frac{x}{2} + 5 - 5$ (from a rule that maps producs of fractions (or numbers) to fractions)
+
+6. $\frac{x}{2} + 0$ (from a rule that maps a number minus itself to 0)
+
+7. $\frac{x}{2}$ (from a rule that maps a number plus 0 to itself)
+
+We see that the two expressions are equivalent, and we have the proof steps.
+However, note that it is not a minimal proof, as we could have used fewer steps to prove the equivalence.
+This can be a very reliable approach. 
 
 ## Modules
 
@@ -369,7 +408,7 @@ DFS explores as far as possible along each branch before backtracking, making it
 
 **Goal**: Prove the identity \( \sin^2 x + \cos^2 x = 1 \) by transforming the left-hand side (LHS) into the right-hand side (RHS) using DFS.
 
-##### Steps:
+##### Proof Steps
 
 1. **Define the Rewrite Rules**
 
