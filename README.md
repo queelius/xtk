@@ -72,6 +72,18 @@ To quickly get started with `xtoolkit`, follow these steps:
   - [Modules](#modules)
     - [Core Modules](#core-modules)
     - [Search Modules](#search-modules)
+  - [Using Tree Search Algorithms: DFS and Best-First Search](#using-tree-search-algorithms-dfs-and-best-first-search)
+    - [Depth-First Search (DFS)](#depth-first-search-dfs)
+      - [Example: Proving a Trigonometric Identity](#example-proving-a-trigonometric-identity)
+        - [Steps:](#steps-1)
+      - [Explanation](#explanation)
+    - [Best-First Search](#best-first-search)
+      - [Example: Simplifying an Algebraic Expression](#example-simplifying-an-algebraic-expression)
+        - [Proofs Steps](#proofs-steps)
+      - [Explanation of Best-First Search](#explanation-of-best-first-search)
+    - [Notes on Usage](#notes-on-usage)
+    - [Additional Tips](#additional-tips)
+    - [Practical Applications](#practical-applications)
   - [Predefined Rewrite Rules](#predefined-rewrite-rules)
   - [Notebooks and Examples](#notebooks-and-examples)
   - [The Power of Language Design](#the-power-of-language-design)
@@ -342,6 +354,172 @@ Each search algorithm is implemented in its own module under `search/`:
 - **`best_first.py`**: Best-First Search
 - **`astar.py`**: A\* Search
 - **`mcts.py`**: Monte Carlo Tree Search
+
+These modules provide functions to perform search operations on expression spaces. Next, we show how to use these modules to explore the space of possible rewrites.
+
+## Using Tree Search Algorithms: DFS and Best-First Search
+
+`xtoolkit` provides powerful tree search algorithms for tasks such as theorem proving, expression transformation, and exploring possible rewrites. This section demonstrates how to use Depth-First Search (DFS) and Best-First Search within `xtoolkit`.
+
+### Depth-First Search (DFS)
+
+DFS explores as far as possible along each branch before backtracking, making it suitable for finding deep solutions without excessive memory consumption.
+
+#### Example: Proving a Trigonometric Identity
+
+**Goal**: Prove the identity \( \sin^2 x + \cos^2 x = 1 \) by transforming the left-hand side (LHS) into the right-hand side (RHS) using DFS.
+
+##### Steps:
+
+1. **Define the Rewrite Rules**
+
+   We'll use fundamental trigonometric identities as rewrite rules.
+
+   ```python
+   # trigonometric_rules.py
+   rules = [
+       # Pythagorean identity
+       [['+', ['^', ['sin', '?x'], 2], ['^', ['cos', '?x'], 2]], 1],
+       # Expand sine squared
+       [['^', ['sin', '?x'], 2], ['-', 1, ['^', ['cos', '?x'], 2]]],
+       # Expand cosine squared
+       [['^', ['cos', '?x'], 2], ['-', 1, ['^', ['sin', '?x'], 2]]],
+       # Sine double angle
+       [['sin', ['*', 2, '?x']], ['*', 2, ['sin', '?x'], ['cos', '?x']]],
+       # Cosine double angle
+       [['cos', ['*', 2, '?x']], ['-', ['^', ['cos', '?x'], 2], ['^', ['sin', '?x'], 2]]],
+       # Other relevant identities...
+   ]
+   ```
+
+2. **Set Up the Initial Expression and Goal Test**
+
+   ```python
+   initial_expr = ['+', ['^', ['sin', 'x'], 2], ['^', ['cos', 'x'], 2]]
+
+   # Define a goal test function
+   def goal_test(expr):
+       return expr == 1
+   ```
+
+3. **Implement DFS**
+
+   ```python
+   from xtoolkit.search.dfs import dfs_search
+
+   # Perform the search
+   solution = dfs_search(initial_expr, rules, goal_test)
+
+   if solution:
+       print("Proof found!")
+       for step in solution:
+           print(step)
+   else:
+       print("No proof found.")
+   ```
+
+4. **Run the Code**
+
+   Execute the script to see if the proof is found. The output should show the steps leading from the LHS to the RHS.
+
+#### Explanation
+
+- **dfs_search**: A function in `xtoolkit` that performs DFS given an initial expression, a set of rules, and a goal test.
+- **Goal Test Function**: Determines when the search should stop by checking if the current expression equals `1`.
+
+### Best-First Search
+
+Best-First Search uses a heuristic to prioritize exploration, making it efficient in finding optimal or near-optimal solutions.
+
+#### Example: Simplifying an Algebraic Expression
+
+**Goal**: Simplify the expression \( (x^2 - 1) \) into its factored form \( (x - 1)(x + 1) \).
+
+##### Proofs Steps
+
+1. **Define the Rewrite Rules**
+
+   ```python
+   # algebraic_rules.py
+   rules = [
+       # Difference of squares
+       [['-', ['^', '?x', 2], ['^', '?y', 2]], ['*', ['+', '?x', '?y'], ['-', '?x', '?y']]],
+       # Expand multiplication
+       [['*', ['+', '?a', '?b'], ['+', '?c', '?d']], ['+', ['*', '?a', '?c'], ['*', '?a', '?d'], ['*', '?b', '?c'], ['*', '?b', '?d']]],
+       # Simplify exponents
+       [['^', ['^', '?x', '?m'], '?n'], ['^', '?x', ['*', '?m', '?n']]],
+       # ... other algebraic rules
+   ]
+   ```
+
+2. **Set Up the Initial Expression and Goal Test**
+
+   ```python
+   initial_expr = ['-', ['^', 'x', 2], 1]
+   target_expr = ['*', ['-', 'x', 1], ['+', 'x', 1]]
+
+   # Define a goal test function
+   def goal_test(expr):
+       return expr == target_expr
+   ```
+
+3. **Define a Heuristic Function**
+
+   The heuristic estimates how "close" an expression is to the target expression.
+
+   ```python
+   def heuristic(expr):
+       # Simple heuristic: count matching elements with the target expression
+       def flatten(e):
+           return [e] if not isinstance(e, list) else sum(map(flatten, e), [])
+       expr_elements = set(flatten(expr))
+       target_elements = set(flatten(target_expr))
+       # Higher score if more elements match
+       return len(expr_elements & target_elements)
+   ```
+
+4. **Implement Best-First Search**
+
+   ```python
+   from xtoolkit.search.best_first import best_first_search
+
+   # Perform the search
+   solution = best_first_search(initial_expr, rules, goal_test, heuristic)
+
+   if solution:
+       print("Simplification found!")
+       for step in solution:
+           print(step)
+   else:
+       print("No simplification found.")
+   ```
+
+5. **Run the Code**
+
+   Execute the script to find the simplification steps from the initial expression to the factored form.
+
+#### Explanation of Best-First Search
+
+- **best_first_search**: A function in `xtoolkit` that performs Best-First Search using the provided heuristic.
+- **Heuristic Function**: Guides the search by estimating the similarity between the current expression and the target expression.
+
+### Notes on Usage
+
+- **Rule Completeness**: Ensure that the set of rules covers the transformations needed to reach the goal.
+- **Heuristic Design**: The effectiveness of Best-First Search heavily relies on the heuristic function's ability to estimate closeness accurately.
+- **Performance Considerations**: While DFS might explore irrelevant branches deeply, Best-First Search can be more efficient if the heuristic is well-designed.
+
+### Additional Tips
+
+- **Combining Searches**: Sometimes, combining different search strategies can yield better results.
+- **Custom Goal Tests**: For more complex goals, define custom goal test functions that capture the desired conditions.
+- **Debugging**: If the search isn't finding a solution, check the rules and heuristic for completeness and correctness.
+
+### Practical Applications
+
+- **Theorem Proving**: Use tree searches to find proofs for mathematical theorems by transforming premises into conclusions.
+- **Expression Optimization**: Find more efficient or simplified forms of expressions in computational settings.
+- **Automated Reasoning**: Implement logic-based systems that require exploring possible inferences.
 
 ## Predefined Rewrite Rules
 
