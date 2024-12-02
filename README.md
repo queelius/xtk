@@ -72,6 +72,7 @@ To quickly get started with `xtoolkit`, follow these steps:
   - [Modules](#modules)
     - [Core Modules](#core-modules)
     - [Search Modules](#search-modules)
+      - [Notes on Search Algorithms](#notes-on-search-algorithms)
   - [Using Tree Search Algorithms: DFS and Best-First Search](#using-tree-search-algorithms-dfs-and-best-first-search)
     - [Depth-First Search (DFS)](#depth-first-search-dfs)
       - [Example: Proving a Trigonometric Identity](#example-proving-a-trigonometric-identity)
@@ -391,10 +392,21 @@ Each search algorithm is implemented in its own module under `search/`:
 - **`dfs.py`**: Depth-First Search
 - **`iddfs.py`**: Iterative Deepening DFS
 - **`best_first.py`**: Best-First Search
-- **`astar.py`**: A\* Search
+- **`greedy.py`**: Greedy Search
+- **`uniform_cost.py`**: Uniform Cost Search
+- **`astar.py`**: A* Search
 - **`mcts.py`**: Monte Carlo Tree Search
+- **`random_walk.py`**: Random Walk. Good for generating theorems.
 
 These modules provide functions to perform search operations on expression spaces. Next, we show how to use these modules to explore the space of possible rewrites.
+
+#### Notes on Search Algorithms
+
+- **Completeness**: Some algorithms like BFS are complete, guaranteeing a solution if one exists.
+- **Optimality**: Algorithms like A* Search find optimal solutions if the heuristic is admissible.
+- **Heuristics**: Best-First Search and A* Search require a heuristic function to guide exploration.
+- **Closed set**: Algorithms like BFS and A* Search may maintain a closed set to avoid revisiting
+  states that have already been explored. It guarantees a solution if
 
 ## Using Tree Search Algorithms: DFS and Best-First Search
 
@@ -412,7 +424,7 @@ DFS explores as far as possible along each branch before backtracking, making it
 
 1. **Define the Rewrite Rules**
 
-   We'll use fundamental trigonometric identities as rewrite rules.
+   We will use fundamental trigonometric identities as rewrite rules.
 
    ```python
    # trigonometric_rules.py
