@@ -1,29 +1,29 @@
-# Expression Toolkit: `xtoolkit`
+# E(x)pression (T)ool(k)it: `xtk`
 
 A rules-based expression rewriting toolkit for symbolic computation.
 
 ## Introduction
 
-`xtoolkit` is a Python package that provides tools for symbolic computation through expression rewriting. It offers capabilities such as pattern matching, rule-based transformations, expression evaluation, theorem proving via tree search, and data generation for AI and machine learning applications.
+`xtk` is a Python package that provides tools for symbolic computation through expression rewriting. It offers capabilities such as pattern matching, rule-based transformations, expression evaluation, theorem proving via tree search, and data generation for AI and machine learning applications.
 
 ## Quick Start
 
-To quickly get started with `xtoolkit`, follow these steps:
+To quickly get started with `xtk`, follow these steps:
 
 1. **Installation**:
 
-   Install `xtoolkit` from PyPI:
+   Install `xtk` from PyPI:
 
    ```sh
-   pip install xtoolkit
+   pip install xtk
    ```
 
 2. **Basic Usage**:
 
-   Here's a simple example of how to use `xtoolkit` to simplify an expression:
+   Here's a simple example of how to use `xtk` to simplify an expression:
 
    ```python
-   from xtoolkit import simplifier
+   from xtk import simplifier
 
    # Define a simplification rule: x + 0 => x
    rules = [
@@ -45,7 +45,7 @@ To quickly get started with `xtoolkit`, follow these steps:
 
 ## Table of Contents
 
-- [Expression Toolkit: `xtoolkit`](#expression-toolkit-xtoolkit)
+- [Expression Toolkit: `xtk`](#expression-toolkit-xtk)
   - [Introduction](#introduction)
   - [Quick Start](#quick-start)
   - [Table of Contents](#table-of-contents)
@@ -93,34 +93,34 @@ To quickly get started with `xtoolkit`, follow these steps:
 To install the package locally from the source code:
 
 ```sh
-git clone https://github.com/queelius/xtoolkit
-cd xtoolkit
+git clone https://github.com/queelius/xtk
+cd xtk
 pip install -e .
 ```
 
 To install it from PyPI:
 
 ```sh
-pip install xtoolkit
+pip install xtk
 ```
 
 ## Overview
 
-`xtoolkit` provides a comprehensive set of tools for symbolic computation:
+`xtk` provides a comprehensive set of tools for symbolic computation:
 
-- **Expression Rewriting Engine** (`xtoolkit/rewriter.py`): Functions for pattern matching, expression instantiation, evaluation, and simplification using transformation rules.
+- **Expression Rewriting Engine** (`xtk/rewriter.py`): Functions for pattern matching, expression instantiation, evaluation, and simplification using transformation rules.
 
-- **Simplifier** (`xtoolkit/simplifier.py`): A recursive simplifier that applies rewrite rules to expressions in a bottom-up manner, facilitating expression simplification.
+- **Simplifier** (`xtk/simplifier.py`): A recursive simplifier that applies rewrite rules to expressions in a bottom-up manner, facilitating expression simplification.
 
-- **Tree Search Algorithms** (`xtoolkit/search/`): Algorithms for theorem proving and exploring expression spaces, including BFS, DFS, IDDFS, Best-First Search, A\* Search, and Monte Carlo Tree Search.
+- **Tree Search Algorithms** (`xtk/search/`): Algorithms for theorem proving and exploring expression spaces, including BFS, DFS, IDDFS, Best-First Search, A\* Search, and Monte Carlo Tree Search.
 
-- **Predefined Mathematical Rules** (`xtoolkit/rules/`): A collection of rules for various mathematical domains such as algebra, calculus, trigonometry, limits, and more.
+- **Predefined Mathematical Rules** (`xtk/rules/`): A collection of rules for various mathematical domains such as algebra, calculus, trigonometry, limits, and more.
 
 - **Jupyter Notebooks** (`notebooks/`): Examples demonstrating the functionality of the package.
 
 ## Representation of Rules and Expressions
 
-`xtoolkit` employs a powerful yet simple representation for rules and expressions, enabling efficient definition and manipulation of symbolic expressions.
+`xtk` employs a powerful yet simple representation for rules and expressions, enabling efficient definition and manipulation of symbolic expressions.
 
 ### Rewrite Rules: Pattern Matching and Skeleton Instantiation
 
@@ -153,7 +153,7 @@ Rewrite rules are defined using an abstract syntax tree (AST) representation, ut
 
 #### Simplified Domain-Specific Language (DSL)
 
-For enhanced readability, `xtoolkit` offers a simplified DSL for writing rules:
+For enhanced readability, `xtk` offers a simplified DSL for writing rules:
 
 ```text
 # Derivative of a constant: d(c)/dx = 0
@@ -225,7 +225,7 @@ The evaluator computes the value of instantiated skeleton expressions using a di
 ### Example: Evaluating Expressions
 
 ```python
-from xtoolkit import evaluate
+from xtk import evaluate
 
 # Define the bindings
 bindings = {
@@ -317,7 +317,7 @@ Simplify `['+', 3, 5]` using the addition operation defined in the evaluator.
 
 ## Tree Search and Theorem Proving
 
-Beyond simplification, `xtoolkit` provides tree search algorithms for tasks such as theorem proving, where the goal is to find a sequence of rewrites that transforms an expression into a target form.
+Beyond simplification, `xtk` provides tree search algorithms for tasks such as theorem proving, where the goal is to find a sequence of rewrites that transforms an expression into a target form.
 
 ### Search Algorithms
 
@@ -359,7 +359,7 @@ These modules provide functions to perform search operations on expression space
 
 ## Using Tree Search Algorithms: DFS and Best-First Search
 
-`xtoolkit` provides powerful tree search algorithms for tasks such as theorem proving, expression transformation, and exploring possible rewrites. This section demonstrates how to use Depth-First Search (DFS) and Best-First Search within `xtoolkit`.
+`xtk` provides powerful tree search algorithms for tasks such as theorem proving, expression transformation, and exploring possible rewrites. This section demonstrates how to use Depth-First Search (DFS) and Best-First Search within `xtk`.
 
 ### Depth-First Search (DFS)
 
@@ -405,7 +405,7 @@ DFS explores as far as possible along each branch before backtracking, making it
 3. **Implement DFS**
 
    ```python
-   from xtoolkit.search.dfs import dfs_search
+   from xtk.search.dfs import dfs_search
 
    # Perform the search
    solution = dfs_search(initial_expr, rules, goal_test)
@@ -424,7 +424,7 @@ DFS explores as far as possible along each branch before backtracking, making it
 
 #### Explanation
 
-- **dfs_search**: A function in `xtoolkit` that performs DFS given an initial expression, a set of rules, and a goal test.
+- **dfs_search**: A function in `xtk` that performs DFS given an initial expression, a set of rules, and a goal test.
 - **Goal Test Function**: Determines when the search should stop by checking if the current expression equals `1`.
 
 ### Best-First Search
@@ -484,7 +484,7 @@ Best-First Search uses a heuristic to prioritize exploration, making it efficien
 4. **Implement Best-First Search**
 
    ```python
-   from xtoolkit.search.best_first import best_first_search
+   from xtk.search.best_first import best_first_search
 
    # Perform the search
    solution = best_first_search(initial_expr, rules, goal_test, heuristic)
@@ -503,7 +503,7 @@ Best-First Search uses a heuristic to prioritize exploration, making it efficien
 
 #### Explanation of Best-First Search
 
-- **best_first_search**: A function in `xtoolkit` that performs Best-First Search using the provided heuristic.
+- **best_first_search**: A function in `xtk` that performs Best-First Search using the provided heuristic.
 - **Heuristic Function**: Guides the search by estimating the similarity between the current expression and the target expression.
 
 ### Notes on Usage
@@ -540,10 +540,10 @@ Additional rules cover domains such as differential equations, logic, set theory
 
 ## Notebooks and Examples
 
-The `notebooks/` directory contains Jupyter notebooks demonstrating the functionality of `xtoolkit`, including examples of simplification, evaluation, and theorem proving.
+The `notebooks/` directory contains Jupyter notebooks demonstrating the functionality of `xtk`, including examples of simplification, evaluation, and theorem proving.
 
 ## The Power of Language Design
 
-Designing a domain-specific language (DSL) enables expressing complex ideas concisely and readably. In `xtoolkit`, the DSL allows users to define transformation rules effectively, leveraging the power of symbolic computation and rule-based systems.
+Designing a domain-specific language (DSL) enables expressing complex ideas concisely and readably. In `xtk`, the DSL allows users to define transformation rules effectively, leveraging the power of symbolic computation and rule-based systems.
 
 Our rules-based system is Turing-complete, capable of expressing any computable function. While powerful, such systems are better suited for symbolic computation, theorem proving, and other symbolic tasks rather than general-purpose programming.
