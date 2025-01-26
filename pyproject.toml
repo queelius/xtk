@@ -7,7 +7,7 @@ packages = ["xtk"]
 package-dir = { "" = "src" }
 
 [project]
-name = "xtk"
+name = "xpression-tk"
 version = "0.1.0"
 description = "A toolkit for expression rewriting."
 authors = [{ name = "Alex Towell", email = "lex@metafunctor.com" }]
