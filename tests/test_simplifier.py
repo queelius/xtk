@@ -1,5 +1,5 @@
 import unittest
-from xtoolkit.rewriter import simplifier
+from xtk.rewriter import simplifier
 
 class TestSimplifier(unittest.TestCase):
 

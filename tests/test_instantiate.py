@@ -1,5 +1,5 @@
 import unittest
-from xtoolkit.rewriter import instantiate, empty_dictionary
+from xtk.rewriter import instantiate, empty_dictionary
 
 class TestInstantiate(unittest.TestCase):
 

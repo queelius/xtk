@@ -1,5 +1,5 @@
 import unittest
-from xtoolkit.rewriter import evaluate
+from xtk.rewriter import evaluate
 import logging
 
 # Disable logging for the tests

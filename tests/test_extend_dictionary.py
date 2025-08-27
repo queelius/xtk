@@ -1,5 +1,5 @@
 import unittest
-from xtoolkit.rewriter import extend_dictionary, empty_dictionary
+from xtk.rewriter import extend_dictionary, empty_dictionary
 
 class TestExtendDictionary(unittest.TestCase):
 

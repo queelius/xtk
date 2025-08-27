@@ -1,5 +1,5 @@
 import unittest
-from xtoolkit.rewriter import (
+from xtk.rewriter import (
     car, cdr, variable_name, arbitrary_constant,
     arbitrary_expression, arbitrary_variable,
     constant, compound, atom, variable,

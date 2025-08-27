@@ -1,5 +1,5 @@
 import unittest
-from xtoolkit.rewriter import match, empty_dictionary
+from xtk.rewriter import match, empty_dictionary
 
 class TestMatch(unittest.TestCase):
 
