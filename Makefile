@@ -1,57 +1,63 @@
-# Makefile for xtoolkit Python project using conda and unittest
+# Simple Makefile for xtk Python project
 
-# Variables
-CONDA_ENV = xtoolkit
-PYTHON = conda run -n $(CONDA_ENV) python
-BLACK = conda run -n $(CONDA_ENV) black
-FLAKE8 = conda run -n $(CONDA_ENV) flake8
-PIP = conda run -n $(CONDA_ENV) pip
+# Python command - use python3 by default
+PYTHON := python3
+VENV := .venv
+VENV_PYTHON := $(VENV)/bin/python
+VENV_PIP := $(VENV)/bin/pip
 
-# Default target
+# Default target - show help
 .PHONY: help
 help:
-	@echo "Usage:"
-	@echo "  make init         - Install dependencies in the conda environment"
-	@echo "  make clean        - Remove temporary files and caches"
-	@echo "  make test         - Run tests with unittest"
-	@echo "  make lint         - Run code linting with flake8"
-	@echo "  make format       - Format code with black"
-	@echo "  make all          - Run tests, linting, and formatting"
+	@echo "xtk Development Commands:"
+	@echo ""
+	@echo "  make install    - Create virtual environment and install package"
+	@echo "  make test       - Run all tests"
+	@echo "  make demo       - Run demo examples"
+	@echo "  make repl       - Start interactive REPL"
+	@echo "  make clean      - Remove build artifacts and cache files"
+	@echo ""
 
-# Initialize the project
-.PHONY: init
-init:
-	@echo "Installing dependencies in the conda environment..."
-	conda activate $(CONDA_ENV) && \
-	$(PIP) install -r requirements.txt
-
-# Clean up temporary files
-.PHONY: clean
-clean:
-	@echo "Cleaning up..."
-	find . -type d -name '__pycache__' -exec rm -r {} +
-	find . -type f -name '*.pyc' -delete
-	rm -rf .pytest_cache
+# Create virtual environment and install package
+.PHONY: install
+install:
+	@echo "Creating virtual environment..."
+	@$(PYTHON) -m venv $(VENV)
+	@echo "Installing package in development mode..."
+	@$(VENV_PIP) install -e .
+	@echo "✓ Installation complete. Activate with: source $(VENV)/bin/activate"
 
 # Run tests
 .PHONY: test
 test:
-	@echo "Running tests with unittest..."
-	$(PYTHON) -m unittest discover -s tests -p "*.py"
+	@echo "Running tests..."
+	@$(VENV_PYTHON) test_runner.py
 
-# Lint code
-.PHONY: lint
-lint:
-	@echo "Running flake8 linting..."
-	$(FLAKE8) xtoolkit
+# Run demo
+.PHONY: demo
+demo:
+	@echo "Running demo..."
+	@$(VENV_PYTHON) demo.py
+	@echo ""
+	@echo "Running simple examples..."
+	@$(VENV_PYTHON) example_simple.py
 
-# Format code
-.PHONY: format
-format:
-	@echo "Formatting code with black..."
-	$(BLACK) xtoolkit
+# Start REPL
+.PHONY: repl
+repl:
+	@echo "Starting XTK REPL..."
+	@$(VENV_PYTHON) -m src.xtk
 
-# Run all checks
-.PHONY: all
-all: test lint format
-	@echo "All checks passed!"
+# Clean up
+.PHONY: clean
+clean:
+	@echo "Cleaning up..."
+	@find . -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
+	@find . -type f -name '*.pyc' -delete
+	@rm -rf .pytest_cache build dist *.egg-info
+	@echo "✓ Cleanup complete"
+
+# Quick test - run a simple expression
+.PHONY: quick
+quick:
+	@$(VENV_PYTHON) -c "import sys; sys.path.insert(0, 'src'); from xtk import Expression; print(Expression(['+', 'x', 'y']).to_string())"
