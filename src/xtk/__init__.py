@@ -38,6 +38,14 @@ from .parser import (
     ParseError,
 )
 
+# Rule loading
+from .rule_loader import (
+    load_rules,
+    save_rules,
+    parse_rules,
+    merge_rules,
+)
+
 # CLI and REPL
 from .cli import (
     XTKRepl,
@@ -79,6 +87,12 @@ __all__ = [
     "parse_dsl",
     "dsl_parser",
     "ParseError",
+    
+    # Rule loading
+    "load_rules",
+    "save_rules",
+    "parse_rules",
+    "merge_rules",
     
     # CLI
     "XTKRepl",

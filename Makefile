@@ -11,11 +11,12 @@ VENV_PIP := $(VENV)/bin/pip
 help:
 	@echo "xtk Development Commands:"
 	@echo ""
-	@echo "  make install    - Create virtual environment and install package"
-	@echo "  make test       - Run all tests"
-	@echo "  make demo       - Run demo examples"
-	@echo "  make repl       - Start interactive REPL"
-	@echo "  make clean      - Remove build artifacts and cache files"
+	@echo "  make install       - Create virtual environment and install package"
+	@echo "  make test          - Run all tests"
+	@echo "  make test-coverage - Run tests with coverage report"
+	@echo "  make demo          - Run demo examples"
+	@echo "  make repl          - Start interactive REPL"
+	@echo "  make clean         - Remove build artifacts and cache files"
 	@echo ""
 
 # Create virtual environment and install package
@@ -31,7 +32,19 @@ install:
 .PHONY: test
 test:
 	@echo "Running tests..."
-	@$(VENV_PYTHON) test_runner.py
+	@$(VENV_PYTHON) test_all.py
+
+# Run tests with coverage
+.PHONY: test-coverage
+test-coverage:
+	@echo "Running tests with coverage..."
+	@$(VENV_PYTHON) test_all.py --coverage
+
+# Run specific test
+.PHONY: test-one
+test-one:
+	@echo "Usage: make test-one TEST=test_parser.TestParseSexpr"
+	@$(VENV_PYTHON) test_all.py --test $(TEST)
 
 # Run demo
 .PHONY: demo

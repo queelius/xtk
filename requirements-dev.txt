@@ -1,0 +1,15 @@
+# Development dependencies for xtk
+
+# Testing
+coverage>=6.0
+pytest>=7.0
+pytest-cov>=3.0
+
+# Code quality (optional)
+black>=22.0
+flake8>=4.0
+mypy>=0.900
+
+# Documentation (optional)
+sphinx>=4.0
+sphinx-rtd-theme>=1.0

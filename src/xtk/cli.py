@@ -255,14 +255,12 @@ Examples:
         print(f"LaTeX: {expr.to_latex()}")
     
     def load_rules(self, filename: str):
-        """Load rules from a file."""
+        """Load rules from a file (JSON or Lisp format)."""
         try:
-            with open(filename, 'r') as f:
-                content = f.read()
-                # Assume JSON format for rules
-                rules = json.loads(content)
-                self.rules.extend(rules)
-                print(f"Loaded {len(rules)} rules from {filename}")
+            from .rule_loader import load_rules
+            new_rules = load_rules(filename)
+            self.rules.extend(new_rules)
+            print(f"Loaded {len(new_rules)} rules from {filename}")
         except Exception as e:
             print(f"Error loading rules: {e}")
     
