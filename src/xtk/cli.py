@@ -12,7 +12,7 @@ import json
 
 from .fluent_api import Expression, ExpressionBuilder as E
 from .parser import parse_sexpr, format_sexpr, dsl_parser
-from .rewriter_improved import simplifier
+from .rewriter import simplifier
 
 
 class XTKRepl:

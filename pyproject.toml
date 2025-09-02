@@ -6,15 +6,54 @@ build-backend = "setuptools.build_meta"
 packages = ["xtk"]
 package-dir = { "" = "src" }
 
+[tool.setuptools.package-data]
+xtk = ["rules/*.py", "py.typed"]
+
 [project]
 name = "xpression-tk"
-version = "0.1.0"
-description = "A toolkit for expression rewriting."
+version = "0.2.0"
+description = "A powerful symbolic expression toolkit for rule-based term rewriting"
 authors = [{ name = "Alex Towell", email = "lex@metafunctor.com" }]
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = { file = "LICENSE" }
-dependencies = []  # Add your dependencies here
+keywords = ["symbolic", "computation", "rewriting", "pattern-matching", "algebra", "calculus"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "flake8>=6.0",
+    "mypy>=1.0",
+    "isort>=5.0",
+]
+docs = [
+    "sphinx>=5.0",
+    "sphinx-rtd-theme>=1.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/queelius/xtk"
+Documentation = "https://github.com/queelius/xtk#readme"
+Repository = "https://github.com/queelius/xtk.git"
+Issues = "https://github.com/queelius/xtk/issues"
+
+[project.scripts]
+xtk = "xtk.cli:main"

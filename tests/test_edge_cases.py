@@ -3,7 +3,7 @@ Strategic unit tests for subtle and difficult edge cases in xtk.
 """
 
 import unittest
-from xtk.rewriter_improved import (
+from xtk.rewriter import (
     match, instantiate, evaluate, simplifier,
     empty_dictionary, extend_dictionary
 )

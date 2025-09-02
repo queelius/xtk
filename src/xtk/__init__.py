@@ -4,10 +4,10 @@ xtk - Expression Toolkit
 A rules-based expression rewriting toolkit for symbolic computation.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # Core rewriter functions
-from .rewriter_improved import (
+from .rewriter import (
     match,
     instantiate,
     evaluate,

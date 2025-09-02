@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import List, Union
 
 from .parser import parse_sexpr, format_sexpr
-from .rewriter_improved import RuleType
+from .rewriter import RuleType
 
 
 def load_rules(source: Union[str, Path, List]) -> List[RuleType]:

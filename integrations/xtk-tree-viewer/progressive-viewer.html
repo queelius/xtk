@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XTK Progressive Tree Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        .file-input {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-input:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255,255,255,0.5);
+        }
+        
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        .tree-container {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: auto;
+            min-height: 400px;
+        }
+        
+        .tree-wrapper {
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center top;
+        }
+        
+        .tree-node {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 18px;
+            margin: 4px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .tree-node.operator {
+            background: linear-gradient(135deg, #5e72e4, #825ee4);
+            color: white;
+            box-shadow: 0 4px 15px rgba(94, 114, 228, 0.3);
+            z-index: 10;
+        }
+        
+        .tree-node.variable {
+            background: linear-gradient(135deg, #2dce89, #11cdef);
+            color: white;
+            box-shadow: 0 4px 15px rgba(45, 206, 137, 0.3);
+        }
+        
+        .tree-node.constant {
+            background: linear-gradient(135deg, #fb6340, #f5365c);
+            color: white;
+            box-shadow: 0 4px 15px rgba(251, 99, 64, 0.3);
+        }
+        
+        .tree-node.evaluating {
+            animation: pulse 1s ease-in-out infinite;
+            transform: scale(1.1);
+            z-index: 20;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            }
+            50% {
+                box-shadow: 0 8px 30px rgba(255, 215, 0, 0.8);
+            }
+        }
+        
+        .tree-node.shrinking {
+            animation: shrinkOut 0.5s ease-out forwards;
+        }
+        
+        @keyframes shrinkOut {
+            to {
+                transform: scale(0.8);
+                opacity: 0.3;
+            }
+        }
+        
+        .tree-node.appearing {
+            animation: appearIn 0.5s ease-out;
+        }
+        
+        @keyframes appearIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .tree-branch {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+        
+        .tree-children {
+            display: flex;
+            justify-content: center;
+            margin-top: 40px;
+            position: relative;
+            gap: 20px;
+        }
+        
+        /* Connection lines */
+        .tree-branch::before {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            width: 2px;
+            height: 20px;
+            background: linear-gradient(180deg, #cbd5e0, transparent);
+            transform: translateX(-50%);
+            z-index: 1;
+        }
+        
+        .tree-child {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .tree-child::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            width: 2px;
+            height: 20px;
+            background: #cbd5e0;
+            transform: translateX(-50%);
+            z-index: 1;
+        }
+        
+        .controls {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #5e72e4, #825ee4);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(94, 114, 228, 0.4);
+        }
+        
+        .btn:disabled {
+            background: linear-gradient(135deg, #8898aa, #a0aec0);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .btn.play-btn {
+            background: linear-gradient(135deg, #2dce89, #11cdef);
+        }
+        
+        .btn.play-btn:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(45, 206, 137, 0.4);
+        }
+        
+        .btn.reset-btn {
+            background: linear-gradient(135deg, #fb6340, #f5365c);
+        }
+        
+        .btn.reset-btn:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(251, 99, 64, 0.4);
+        }
+        
+        .step-info {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #172b4d, #1a174d);
+            color: white;
+            border-radius: 10px;
+            font-size: 14px;
+            min-width: 150px;
+            text-align: center;
+        }
+        
+        .step-number {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: rgba(23, 43, 77, 0.05);
+            border-radius: 10px;
+        }
+        
+        .speed-control label {
+            font-size: 14px;
+            color: #525f7f;
+            font-weight: 500;
+        }
+        
+        .speed-control input {
+            width: 100px;
+        }
+        
+        .speed-display {
+            font-weight: bold;
+            color: #5e72e4;
+            min-width: 40px;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #8898aa;
+            font-size: 20px;
+        }
+        
+        .expression-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            padding: 15px;
+            background: rgba(23, 43, 77, 0.05);
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #32325d;
+            text-align: center;
+        }
+        
+        .highlight-change {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #172b4d;
+            animation: highlightPulse 0.6s ease;
+        }
+        
+        @keyframes highlightPulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.15);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌲 XTK Progressive Tree Viewer</h1>
+        <input type="file" id="fileInput" class="file-input" accept=".json">
+    </div>
+    
+    <div class="main-container">
+        <div class="tree-container" id="treeContainer">
+            <div class="no-data">
+                <p>Load a rewrite steps file to see the progressive evaluation</p>
+                <p style="margin-top: 10px; font-size: 16px; color: #adb5bd;">
+                    Watch as the expression tree shrinks through evaluation
+                </p>
+            </div>
+        </div>
+        
+        <div class="controls" id="controls" style="display: none;">
+            <button class="btn reset-btn" onclick="resetSteps()">
+                ⟲ Reset
+            </button>
+            <button class="btn" onclick="previousStep()" id="prevBtn">
+                ← Previous
+            </button>
+            <div class="step-info">
+                Step <span class="step-number" id="stepNumber">0</span> / <span id="totalSteps">0</span>
+            </div>
+            <button class="btn" onclick="nextStep()" id="nextBtn">
+                Next →
+            </button>
+            <button class="btn play-btn" onclick="toggleAutoPlay()" id="playBtn">
+                <span id="playIcon">▶</span> <span id="playText">Play</span>
+            </button>
+            <div class="speed-control">
+                <label>Speed:</label>
+                <input type="range" id="speedSlider" min="500" max="3000" value="1500" step="100" 
+                       oninput="updateSpeed(this.value)">
+                <span class="speed-display" id="speedDisplay">1.5s</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentData = null;
+        let currentStepIndex = 0;
+        let autoPlayInterval = null;
+        let autoPlaySpeed = 1500;
+        let previousExpression = null;
+        
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    currentData = JSON.parse(e.target.result);
+                    initializeViewer();
+                } catch (error) {
+                    alert('Error parsing JSON file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function initializeViewer() {
+            if (!currentData || !currentData.steps || currentData.steps.length === 0) {
+                return;
+            }
+            
+            document.getElementById('controls').style.display = 'flex';
+            document.getElementById('totalSteps').textContent = currentData.steps.length - 1;
+            currentStepIndex = 0;
+            previousExpression = null;
+            stopAutoPlay();
+            displayStep(0);
+        }
+        
+        function displayStep(index) {
+            if (!currentData || index < 0 || index >= currentData.steps.length) return;
+            
+            currentStepIndex = index;
+            const step = currentData.steps[index];
+            document.getElementById('stepNumber').textContent = index;
+            
+            // Update button states
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === currentData.steps.length - 1;
+            
+            // Get the FULL expression at this step
+            // For initial and final, use the expression directly
+            // For rewrite steps, we need to reconstruct the full tree
+            let expression;
+            
+            if (step.type === 'initial') {
+                expression = step.expression;
+            } else if (step.type === 'final') {
+                expression = step.expression;
+            } else if (step.type === 'rewrite' || step.type === 'simplification') {
+                // For intermediate steps, we need the full expression
+                // Look for the previous step's result to get context
+                expression = getCurrentFullExpression(index);
+            }
+            
+            // Update tree display with change detection
+            const container = document.getElementById('treeContainer');
+            
+            // Create expression display
+            let displayHtml = '';
+            if (step.type !== 'initial') {
+                displayHtml += '<div class="expression-display">';
+                displayHtml += `<strong>Step ${index}:</strong> `;
+                if (step.type === 'rewrite') {
+                    displayHtml += `Applied: ${formatExpression(step.before)} → ${formatExpression(step.after)}`;
+                } else if (step.type === 'simplification') {
+                    displayHtml += step.operation || 'Simplification';
+                } else if (step.type === 'final') {
+                    displayHtml += 'Final result';
+                }
+                displayHtml += '</div>';
+            }
+            
+            // Find what changed by comparing with previous full expression
+            const prevFullExpression = index > 0 ? getCurrentFullExpression(index - 1) : null;
+            const changedPaths = findChangedPaths(prevFullExpression, expression);
+            const treeHtml = renderProgressiveTree(expression, changedPaths, index > 0);
+            
+            container.innerHTML = displayHtml + `
+                <div class="tree-wrapper" id="treeWrapper">
+                    ${treeHtml}
+                </div>
+            `;
+            
+            // Store current expression for next comparison
+            previousExpression = expression;
+        }
+        
+        function getCurrentFullExpression(stepIndex) {
+            // This function reconstructs the full expression at any given step
+            // by tracking through all the transformations
+            
+            if (stepIndex <= 0) {
+                return currentData.steps[0].expression;
+            }
+            
+            const step = currentData.steps[stepIndex];
+            
+            if (step.type === 'initial') {
+                return step.expression;
+            } else if (step.type === 'final') {
+                return step.expression;
+            } else if (step.type === 'rewrite' || step.type === 'simplification') {
+                // For a rewrite, we need to find where in the previous full expression
+                // the 'before' pattern was, and replace it with 'after'
+                const prevExpression = getCurrentFullExpression(stepIndex - 1);
+                
+                // If the entire expression was rewritten
+                if (JSON.stringify(prevExpression) === JSON.stringify(step.before)) {
+                    return step.after;
+                }
+                
+                // Otherwise, find and replace the subtree
+                return replaceSubtree(prevExpression, step.before, step.after);
+            }
+            
+            // Fallback
+            return step.after || step.expression;
+        }
+        
+        function replaceSubtree(expr, target, replacement) {
+            // Deep replace a subtree in the expression
+            if (JSON.stringify(expr) === JSON.stringify(target)) {
+                return replacement;
+            }
+            
+            if (Array.isArray(expr)) {
+                return expr.map(e => replaceSubtree(e, target, replacement));
+            }
+            
+            return expr;
+        }
+        
+        function findChangedPaths(oldExpr, newExpr, path = []) {
+            const changes = new Set();
+            
+            if (!oldExpr || JSON.stringify(oldExpr) !== JSON.stringify(newExpr)) {
+                changes.add(path.join('.'));
+            }
+            
+            if (Array.isArray(oldExpr) && Array.isArray(newExpr)) {
+                const minLen = Math.min(oldExpr.length, newExpr.length);
+                for (let i = 0; i < minLen; i++) {
+                    const subChanges = findChangedPaths(oldExpr[i], newExpr[i], [...path, i]);
+                    subChanges.forEach(change => changes.add(change));
+                }
+            }
+            
+            return changes;
+        }
+        
+        function renderProgressiveTree(expr, changedPaths, animate = false, path = []) {
+            const currentPath = path.join('.');
+            const isChanged = changedPaths && changedPaths.has(currentPath);
+            const animationClass = animate && isChanged ? 'appearing' : '';
+            
+            if (expr === null || expr === undefined) {
+                return `<span class="tree-node constant ${animationClass} ${isChanged ? 'highlight-change' : ''}">null</span>`;
+            }
+            
+            if (typeof expr === 'number') {
+                return `<span class="tree-node constant ${animationClass} ${isChanged ? 'highlight-change' : ''}">${expr}</span>`;
+            }
+            
+            if (typeof expr === 'string') {
+                const operators = ['+', '-', '*', '/', '=', '<', '>', '<=', '>=', '!=', 'deriv', 'integral'];
+                if (operators.includes(expr)) {
+                    return `<span class="tree-node operator ${animationClass} ${isChanged ? 'highlight-change' : ''}">${expr}</span>`;
+                }
+                return `<span class="tree-node variable ${animationClass} ${isChanged ? 'highlight-change' : ''}">${expr}</span>`;
+            }
+            
+            if (Array.isArray(expr)) {
+                if (expr.length === 0) {
+                    return `<span class="tree-node ${animationClass}">[]</span>`;
+                }
+                
+                // Check if first element is an operator
+                const operators = ['+', '-', '*', '/', 'deriv', 'integral', '=', '<', '>', '<=', '>=', '!='];
+                if (typeof expr[0] === 'string' && operators.includes(expr[0])) {
+                    const op = expr[0];
+                    const args = expr.slice(1);
+                    
+                    // Create tree structure
+                    let html = '<div class="tree-branch">';
+                    
+                    // Operator node
+                    const opPath = [...path, 0].join('.');
+                    const opChanged = changedPaths && changedPaths.has(opPath);
+                    html += `<span class="tree-node operator ${animationClass} ${opChanged ? 'highlight-change' : ''}">${op}</span>`;
+                    
+                    // Children
+                    if (args.length > 0) {
+                        html += '<div class="tree-children">';
+                        for (let i = 0; i < args.length; i++) {
+                            html += '<div class="tree-child">';
+                            html += renderProgressiveTree(args[i], changedPaths, animate, [...path, i + 1]);
+                            html += '</div>';
+                        }
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                    
+                    return html;
+                }
+                
+                // Regular list
+                let listHtml = '<span class="tree-node">[';
+                for (let i = 0; i < expr.length; i++) {
+                    if (i > 0) listHtml += ', ';
+                    listHtml += renderProgressiveTree(expr[i], changedPaths, animate, [...path, i]);
+                }
+                listHtml += ']</span>';
+                return listHtml;
+            }
+            
+            return `<span class="tree-node ${animationClass}">${JSON.stringify(expr)}</span>`;
+        }
+        
+        function formatExpression(expr) {
+            if (expr === null || expr === undefined) return 'null';
+            if (typeof expr === 'string' || typeof expr === 'number') return String(expr);
+            if (Array.isArray(expr)) {
+                if (expr.length === 0) return '[]';
+                return '(' + expr.map(formatExpression).join(' ') + ')';
+            }
+            return JSON.stringify(expr);
+        }
+        
+        function nextStep() {
+            if (currentStepIndex < currentData.steps.length - 1) {
+                displayStep(currentStepIndex + 1);
+            }
+        }
+        
+        function previousStep() {
+            if (currentStepIndex > 0) {
+                displayStep(currentStepIndex - 1);
+            }
+        }
+        
+        function resetSteps() {
+            stopAutoPlay();
+            previousExpression = null;
+            displayStep(0);
+        }
+        
+        function toggleAutoPlay() {
+            if (autoPlayInterval) {
+                stopAutoPlay();
+            } else {
+                startAutoPlay();
+            }
+        }
+        
+        function startAutoPlay() {
+            if (currentStepIndex >= currentData.steps.length - 1) {
+                resetSteps();
+            }
+            
+            document.getElementById('playIcon').textContent = '⏸';
+            document.getElementById('playText').textContent = 'Pause';
+            
+            autoPlayInterval = setInterval(() => {
+                if (currentStepIndex < currentData.steps.length - 1) {
+                    nextStep();
+                } else {
+                    stopAutoPlay();
+                }
+            }, autoPlaySpeed);
+        }
+        
+        function stopAutoPlay() {
+            if (autoPlayInterval) {
+                clearInterval(autoPlayInterval);
+                autoPlayInterval = null;
+            }
+            document.getElementById('playIcon').textContent = '▶';
+            document.getElementById('playText').textContent = 'Play';
+        }
+        
+        function updateSpeed(value) {
+            autoPlaySpeed = parseInt(value);
+            document.getElementById('speedDisplay').textContent = (value / 1000).toFixed(1) + 's';
+            
+            // Restart autoplay with new speed if it's running
+            if (autoPlayInterval) {
+                stopAutoPlay();
+                startAutoPlay();
+            }
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (!currentData) return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    previousStep();
+                    break;
+                case 'ArrowRight':
+                    nextStep();
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    toggleAutoPlay();
+                    break;
+                case 'r':
+                case 'R':
+                    resetSteps();
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,6 +1,11 @@
-# E(x)pression (T)ool(k)it: `xtk`
+# XTK - Expression Toolkit
 
-A rules-based expression rewriting toolkit for symbolic computation.
+[![CI](https://github.com/queelius/xtk/actions/workflows/ci.yml/badge.svg)](https://github.com/queelius/xtk/actions/workflows/ci.yml)
+[![PyPI version](https://badge.fury.io/py/xpression-tk.svg)](https://badge.fury.io/py/xpression-tk)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A powerful symbolic expression toolkit for rule-based term rewriting in Python. XTK provides pattern matching, expression transformation, and symbolic computation capabilities with multiple input formats including S-expressions and infix notation.
 
 ## Introduction
 

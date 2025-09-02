@@ -6,7 +6,7 @@ from typing import Any, List, Union, Optional, Callable, Dict
 from copy import deepcopy
 import logging
 
-from .rewriter_improved import (
+from .rewriter import (
     simplifier, match, instantiate, evaluate,
     empty_dictionary, ExprType, DictType, RuleType
 )

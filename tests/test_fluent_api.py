@@ -8,7 +8,7 @@ from copy import deepcopy
 from xtk.fluent_api import (
     Expression, ExpressionBuilder, E, expr
 )
-from xtk.rewriter_improved import empty_dictionary
+from xtk.rewriter import empty_dictionary
 
 
 class TestExpression(unittest.TestCase):
