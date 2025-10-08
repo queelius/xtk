@@ -5,7 +5,7 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A powerful symbolic expression toolkit for rule-based term rewriting in Python. XTK provides pattern matching, expression transformation, and symbolic computation capabilities with multiple input formats including S-expressions and infix notation.
+A powerful symbolic expression toolkit for rule-based term rewriting in Python. XTK provides pattern matching, expression transformation, and symbolic computation capabilities with an **interactive REPL featuring rich visualizations**, support for multiple input formats including S-expressions and infix notation, and step-by-step transformation tracing.
 
 ## Introduction
 
@@ -13,35 +13,49 @@ A powerful symbolic expression toolkit for rule-based term rewriting in Python. 
 
 ## Quick Start
 
-To quickly get started with `xtk`, follow these steps:
+### Interactive REPL (Recommended)
 
-1. **Installation**:
+The fastest way to explore XTK is through the interactive REPL:
 
-   Install `xtk` from PyPI:
+```bash
+pip install xpression-tk
+python3 -m xtk.cli
+```
 
-   ```sh
-   pip install xtk
-   ```
+Try these commands:
+```
+xtk> (+ 2 3)        # Arithmetic evaluation
+xtk> /rewrite
+Rewritten: 5
 
-2. **Basic Usage**:
+xtk> /tree          # Tree visualization
+xtk> /rules load src/xtk/rules/deriv_rules.py
+xtk> (dd (^ x 2) x) # Differentiation
+xtk> /rw
+xtk> /help
+```
 
-   Here's a simple example of how to use `xtk` to simplify an expression:
+See [REPL_GUIDE.md](REPL_GUIDE.md) for complete documentation.
+
+### Programmatic Usage
+
+Here's a simple example of how to use `xtk` to rewrite an expression:
 
    ```python
-   from xtk import simplifier
+   from xtk import rewriter
 
-   # Define a simplification rule: x + 0 => x
+   # Define a rewrite rule: x + 0 => x
    rules = [
        [['+', ['?', 'x'], 0], [':', 'x']]
    ]
 
-   # Create a simplifier function using the rule
-   simplify = simplifier(rules)
+   # Create a rewriter function using the rule
+   rewrite = rewriter(rules)
 
-   # Simplify an expression
+   # Rewrite an expression
    expr = ['+', 'a', 0]
-   result = simplify(expr)
-   print(f"Simplified expression: {result}")  # Output: Simplified expression: a
+   result = rewrite(expr)
+   print(f"Rewritten expression: {result}")  # Output: Rewritten expression: a
    ```
 
 3. **Exploring More Features**:

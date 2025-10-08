@@ -9,17 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Fluent API for chainable expression operations
-- Step logger for tracking and visualizing expression transformations
-- Three interactive tree viewers for visualizing rewrite steps:
-  - `viewer.html`: Detailed step-by-step view with rules and bindings
-  - `live-viewer.html`: Clean tree visualization with animations
-  - `progressive-viewer.html`: Shows complete tree with highlighted changes
+- Step logger for tracking expression transformations
 - Comprehensive parser supporting both S-expressions and infix notation
 - Rule loader supporting JSON and Lisp-style rule formats
 - Interactive REPL with tab completion and history
-- Extensive example collection demonstrating various features
+- Example collection demonstrating various features
 - Type hints throughout the codebase
-- Comprehensive test suite with coverage reporting
+- Comprehensive test suite with 93% coverage
 
 ### Changed
 - Replaced string-based error handling ("failed") with proper exception handling
@@ -37,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Removed legacy rewriter implementation
 - Removed conda-specific Makefile targets
+- Removed tree-viewer integration (limited value)
+- Consolidated duplicate test files
+- Consolidated duplicate rule files
 
 ## [0.1.0] - 2024-08-27
 

@@ -6,6 +6,8 @@ Leverages the existing S-expression parser for all formats.
 
 import json
 import re
+import sys
+import importlib.util
 from pathlib import Path
 from typing import List, Union
 
@@ -16,31 +18,74 @@ from .rewriter import RuleType
 def load_rules(source: Union[str, Path, List]) -> List[RuleType]:
     """
     Load rules from various sources.
-    
+
     Args:
-        source: Can be a filepath (.json, .lisp), a list of rules, 
+        source: Can be a filepath (.json, .lisp, .py), a list of rules,
                 or a string containing rules
-    
+
     Returns:
         List of [pattern, skeleton] rules
     """
     # Already a list of rules
     if isinstance(source, list):
         return source
-    
+
     # File path
     if isinstance(source, (str, Path)):
         path = Path(source)
         if path.exists():
+            # Handle Python files specially
+            if path.suffix == '.py':
+                return load_python_rules(path)
+
             with open(path, 'r') as f:
                 content = f.read()
         else:
             # Treat as inline rule string
             content = str(source)
-        
+
         return parse_rules(content)
-    
+
     raise ValueError(f"Cannot load rules from {type(source)}")
+
+
+def load_python_rules(path: Path) -> List[RuleType]:
+    """
+    Load rules from a Python file by importing it.
+
+    The Python file should export rules as lists, e.g.:
+        deriv_rules_fixed = [[pattern, skeleton], ...]
+        simplify_rules = [[pattern, skeleton], ...]
+
+    This function will collect all list variables that look like rule sets.
+    """
+    # Import the module dynamically
+    spec = importlib.util.spec_from_file_location("_xtk_rules_module", path)
+    if spec is None or spec.loader is None:
+        raise ValueError(f"Cannot load Python module from {path}")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["_xtk_rules_module"] = module
+    spec.loader.exec_module(module)
+
+    # Collect all rules from the module
+    all_rules = []
+
+    for name in dir(module):
+        if name.startswith('_'):
+            continue
+
+        obj = getattr(module, name)
+
+        # Check if it looks like a rule set
+        if isinstance(obj, list) and obj and is_rule_format(obj[0]):
+            all_rules.extend(obj)
+
+    # Clean up
+    if "_xtk_rules_module" in sys.modules:
+        del sys.modules["_xtk_rules_module"]
+
+    return all_rules
 
 
 def parse_rules(content: str) -> List[RuleType]:

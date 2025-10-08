@@ -7,7 +7,7 @@ from copy import deepcopy
 import logging
 
 from .rewriter import (
-    simplifier, match, instantiate, evaluate,
+    rewriter, match, instantiate, evaluate,
     empty_dictionary, ExprType, DictType, RuleType
 )
 
@@ -132,22 +132,24 @@ class Expression:
         self._bindings.append([name, value])
         return self
     
-    def simplify(self, max_steps: Optional[int] = None) -> 'Expression':
+    def simplify(self, max_steps: Optional[int] = None, constant_folding: bool = True) -> 'Expression':
         """
         Simplify the expression using current rules.
-        
+
+        Even without rules, constant folding will evaluate arithmetic
+        on numeric constants (e.g., (+ 2 3) → 5) when enabled.
+
         Args:
             max_steps: Maximum simplification steps
-            
+            constant_folding: Enable constant folding (default: True)
+
         Returns:
             New Expression with simplified result
         """
-        if not self._rules:
-            return self.copy()
-        
-        simplify_fn = simplifier(self._rules)
-        result = simplify_fn(self.expr)
-        
+        # Always call rewriter - it handles constant folding even without rules
+        rewrite_fn = rewriter(self._rules if self._rules else [], constant_folding=constant_folding)
+        result = rewrite_fn(self.expr)
+
         new_expr = Expression(result)
         new_expr._rules = deepcopy(self._rules)
         new_expr._bindings = deepcopy(self._bindings)
@@ -217,7 +219,7 @@ class Expression:
         Returns:
             New Expression representing the derivative
         """
-        from .rules.deriv_rules_fixed import deriv_rules_fixed
+        from .rules.deriv_rules import deriv_rules_fixed
         
         deriv_expr = ['dd', self.expr, var]
         new_expr = Expression(deriv_expr)

@@ -11,7 +11,7 @@ from .rewriter import (
     match,
     instantiate,
     evaluate,
-    simplifier,
+    rewriter,
     empty_dictionary,
     extend_dictionary,
     lookup,
@@ -20,6 +20,9 @@ from .rewriter import (
     DictType,
     RuleType,
 )
+
+# Backwards compatibility alias
+simplifier = rewriter
 
 # Fluent API
 from .fluent_api import (
@@ -53,7 +56,7 @@ from .cli import (
 )
 
 # Commonly used rules
-from .rules.deriv_rules_fixed import deriv_rules_fixed
+from .rules.deriv_rules import deriv_rules_fixed
 from .rules.algebra_rules import (
     simplify_rules,
     expand_rules,
@@ -65,11 +68,12 @@ __all__ = [
     "match",
     "instantiate",
     "evaluate",
-    "simplifier",
+    "rewriter",
+    "simplifier",  # Backwards compatibility
     "empty_dictionary",
     "extend_dictionary",
     "lookup",
-    
+
     # Types
     "ExprType",
     "DictType",

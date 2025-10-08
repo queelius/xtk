@@ -33,7 +33,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-dependencies = []
+dependencies = ["rich>=13.0"]
 
 [project.optional-dependencies]
 dev = [

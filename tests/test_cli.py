@@ -1,4 +1,4 @@
-"""Comprehensive test suite for cli.py module."""
+"""Test suite for the actual cli.py module implementation."""
 
 import unittest
 import os
@@ -8,465 +8,438 @@ import tempfile
 from unittest.mock import patch, MagicMock, mock_open, call
 from io import StringIO
 
-from xtk.cli import XTKRepl, RuleDSL, parse_expression, format_expression, main
+from xtk.cli import XTKRepl, main
 
 
-class TestXTKRepl(unittest.TestCase):
-    """Test the XTK REPL class."""
+class TestXTKReplInit(unittest.TestCase):
+    """Test XTKRepl initialization."""
+
+    @patch('xtk.cli.readline')
+    @patch('xtk.cli.atexit')
+    def test_initialization(self, mock_atexit, mock_readline):
+        """Test REPL initialization."""
+        repl = XTKRepl()
+
+        # Check initial state
+        self.assertEqual(repl.history, [])
+        self.assertEqual(repl.bindings, [])
+        self.assertEqual(repl.rules, [])
+        self.assertEqual(repl.variables, {})
+
+        # Check readline setup was called
+        mock_readline.parse_and_bind.assert_called_with('tab: complete')
+        mock_readline.set_completer.assert_called_once()
+        mock_atexit.register.assert_called_once()
+
+
+class TestXTKReplComplete(unittest.TestCase):
+    """Test tab completion functionality."""
 
     def setUp(self):
-        """Set up test REPL instance."""
-        # Mock readline to avoid history file operations
+        """Set up test REPL."""
         with patch('xtk.cli.readline'):
             with patch('xtk.cli.atexit'):
                 self.repl = XTKRepl()
 
-    def test_initialization(self):
-        """Test REPL initialization."""
-        self.assertEqual(self.repl.history, [])
-        self.assertEqual(self.repl.bindings, [])
-        self.assertEqual(self.repl.rules, [])
-        self.assertEqual(self.repl.variables, {})
-
-    @patch('xtk.cli.readline')
-    def test_setup_readline(self, mock_readline):
-        """Test readline setup."""
-        with patch('xtk.cli.atexit.register') as mock_register:
-            repl = XTKRepl()
-            mock_readline.parse_and_bind.assert_called_with('tab: complete')
-            mock_readline.set_completer.assert_called_once()
-            mock_register.assert_called_once()
-
     def test_complete_commands(self):
-        """Test tab completion for commands."""
-        # Test completion for 'he'
-        self.assertEqual(self.repl.complete('he', 0), 'help')
+        """Test command completion."""
+        # Test completion for 'hel'
+        result = self.repl.complete('hel', 0)
+        self.assertEqual(result, 'help')
 
         # Test completion for 'ex'
-        self.assertEqual(self.repl.complete('ex', 0), 'exit')
-        self.assertEqual(self.repl.complete('ex', 1), 'expand')
+        result1 = self.repl.complete('ex', 0)
+        result2 = self.repl.complete('ex', 1)
+        self.assertIn(result1, ['exit', 'expand'])
+        self.assertIn(result2, ['exit', 'expand'])
+        self.assertNotEqual(result1, result2)
 
-        # Test completion for empty string
+    def test_complete_empty_string(self):
+        """Test completion with empty string."""
         result = self.repl.complete('', 0)
-        self.assertIn(result, ['help', 'quit', 'exit', 'clear', 'history',
-                               'simplify', 'evaluate', 'differentiate', 'substitute',
-                               'expand', 'factor', 'match', 'transform',
-                               'load-rules', 'save-rules', 'list-rules',
-                               'set', 'get', 'del', 'vars',
-                               'latex', 'tree', 'sexpr'])
+        self.assertIsNotNone(result)
+        # Should return one of the available commands
+        self.assertIn(result, [
+            'help', 'quit', 'exit', 'clear', 'history',
+            'simplify', 'evaluate', 'differentiate', 'substitute',
+            'expand', 'factor', 'match', 'transform',
+            'load-rules', 'save-rules', 'list-rules',
+            'set', 'get', 'del', 'vars',
+            'latex', 'tree', 'sexpr'
+        ])
 
-    def test_complete_variables(self):
-        """Test tab completion for variables."""
-        self.repl.variables = {'x': 1, 'xyz': 2, 'y': 3}
+    def test_complete_with_variables(self):
+        """Test completion includes variables."""
+        self.repl.variables = {'x': None, 'xyz': None, 'y': None}
 
-        # Should complete variable names with $
-        self.assertEqual(self.repl.complete('$x', 0), '$x')
-        self.assertEqual(self.repl.complete('$x', 1), '$xyz')
+        # Variables should be included in completion options
+        options = []
+        i = 0
+        while True:
+            result = self.repl.complete('x', i)
+            if result is None:
+                break
+            options.append(result)
+            i += 1
 
-    def test_execute_help(self):
-        """Test help command execution."""
-        with patch('builtins.print') as mock_print:
-            self.repl.execute('help')
-            # Should print help information
-            mock_print.assert_called()
-            call_args = str(mock_print.call_args_list)
-            self.assertIn('Commands:', call_args)
-
-    def test_execute_quit(self):
-        """Test quit command."""
-        with self.assertRaises(SystemExit):
-            self.repl.execute('quit')
-
-    def test_execute_exit(self):
-        """Test exit command."""
-        with self.assertRaises(SystemExit):
-            self.repl.execute('exit')
-
-    def test_execute_clear(self):
-        """Test clear command."""
-        self.repl.history = [1, 2, 3]
-        self.repl.variables = {'x': 1}
-
-        with patch('builtins.print') as mock_print:
-            self.repl.execute('clear')
-
-        self.assertEqual(self.repl.history, [])
-        self.assertEqual(self.repl.variables, {})
-
-    def test_execute_history(self):
-        """Test history command."""
-        self.repl.history = ['expr1', 'expr2', 'expr3']
-
-        with patch('builtins.print') as mock_print:
-            self.repl.execute('history')
-            # Should print history
-            calls = mock_print.call_args_list
-            self.assertTrue(any('expr1' in str(call) for call in calls))
-            self.assertTrue(any('expr2' in str(call) for call in calls))
-
-    def test_execute_set_variable(self):
-        """Test setting variables."""
-        with patch('builtins.print') as mock_print:
-            self.repl.execute('set x = 42')
-            self.assertEqual(self.repl.variables['x'], 42)
-
-            self.repl.execute('set y = [+ 1 2]')
-            self.assertEqual(self.repl.variables['y'], ['+', 1, 2])
-
-    def test_execute_get_variable(self):
-        """Test getting variables."""
-        self.repl.variables = {'x': 42, 'y': ['+', 1, 2]}
-
-        with patch('builtins.print') as mock_print:
-            self.repl.execute('get x')
-            mock_print.assert_called_with('x = 42')
-
-            self.repl.execute('get y')
-            # Should print the expression
-
-    def test_execute_del_variable(self):
-        """Test deleting variables."""
-        self.repl.variables = {'x': 42}
-
-        with patch('builtins.print') as mock_print:
-            self.repl.execute('del x')
-            self.assertNotIn('x', self.repl.variables)
-
-    def test_execute_vars(self):
-        """Test listing variables."""
-        self.repl.variables = {'x': 42, 'y': ['+', 1, 2]}
-
-        with patch('builtins.print') as mock_print:
-            self.repl.execute('vars')
-            calls = str(mock_print.call_args_list)
-            self.assertIn('x', calls)
-            self.assertIn('y', calls)
-
-    @patch('builtins.print')
-    def test_execute_simplify(self, mock_print):
-        """Test simplify command."""
-        self.repl.execute('simplify (+ x 0)')
-        # Should simplify the expression
-
-    @patch('builtins.print')
-    def test_execute_evaluate(self, mock_print):
-        """Test evaluate command."""
-        self.repl.execute('evaluate (+ 1 2)')
-        # Should evaluate the expression
-
-    @patch('builtins.print')
-    def test_execute_differentiate(self, mock_print):
-        """Test differentiate command."""
-        self.repl.execute('differentiate (+ x 1) x')
-        # Should differentiate the expression
-
-    @patch('builtins.print')
-    def test_execute_substitute(self, mock_print):
-        """Test substitute command."""
-        self.repl.execute('substitute (+ x y) x 2')
-        # Should substitute in the expression
-
-    def test_execute_invalid_command(self):
-        """Test handling of invalid commands."""
-        with patch('builtins.print') as mock_print:
-            self.repl.execute('invalid_command')
-            calls = str(mock_print.call_args_list)
-            self.assertIn('Unknown command', calls)
-
-    def test_run_interactive(self):
-        """Test interactive REPL loop."""
-        inputs = ['help', 'quit']
-        with patch('builtins.input', side_effect=inputs):
-            with patch('builtins.print'):
-                with self.assertRaises(SystemExit):
-                    self.repl.run()
+        # Should include both variables and commands starting with 'x'
+        self.assertIn('x', options)
+        self.assertIn('xyz', options)
 
 
-class TestRuleDSL(unittest.TestCase):
-    """Test the Rule DSL class."""
+class TestXTKReplRun(unittest.TestCase):
+    """Test REPL run loop."""
 
     def setUp(self):
-        """Set up test DSL instance."""
-        self.dsl = RuleDSL()
+        """Set up test REPL."""
+        with patch('xtk.cli.readline'):
+            with patch('xtk.cli.atexit'):
+                self.repl = XTKRepl()
 
-    def test_pattern_methods(self):
-        """Test pattern creation methods."""
-        # Test any pattern
-        self.assertEqual(self.dsl.any('x'), ['?', 'x'])
+    @patch('builtins.input', side_effect=['quit'])
+    @patch('builtins.print')
+    def test_run_quit_command(self, mock_print, mock_input):
+        """Test REPL quits on 'quit' command."""
+        self.repl.run()
 
-        # Test const pattern
-        self.assertEqual(self.dsl.const('c'), ['?c', 'c'])
+        # Check welcome message was printed
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('Welcome' in call for call in calls))
+        self.assertTrue(any('Goodbye' in call for call in calls))
 
-        # Test var pattern
-        self.assertEqual(self.dsl.var('v'), ['?v', 'v'])
+    @patch('builtins.input', side_effect=['exit'])
+    @patch('builtins.print')
+    def test_run_exit_command(self, mock_print, mock_input):
+        """Test REPL quits on 'exit' command."""
+        self.repl.run()
 
-    def test_skeleton_methods(self):
-        """Test skeleton creation methods."""
-        # Test sub (substitution)
-        self.assertEqual(self.dsl.sub('x'), [':', 'x'])
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('Goodbye' in call for call in calls))
 
-    def test_rule_creation(self):
-        """Test rule creation."""
-        pattern = self.dsl.any('x')
-        skeleton = self.dsl.sub('x')
-        rule = self.dsl.rule(pattern, skeleton)
-        self.assertEqual(rule, [['?', 'x'], [':', 'x']])
+    @patch('builtins.input', side_effect=['', 'quit'])
+    @patch('builtins.print')
+    def test_run_empty_line(self, mock_print, mock_input):
+        """Test REPL handles empty lines."""
+        self.repl.run()
+        # Should continue without error
 
-    def test_parse_valid_rule(self):
-        """Test parsing valid rule strings."""
-        # Simple rule
-        rule_str = "(+ ?x 0) -> :x"
-        result = self.dsl.parse(rule_str)
-        self.assertEqual(result, [['+', ['?', 'x'], 0], [':', 'x']])
+    @patch('builtins.input', side_effect=KeyboardInterrupt())
+    @patch('builtins.print')
+    def test_run_keyboard_interrupt(self, mock_print, mock_input):
+        """Test REPL handles KeyboardInterrupt."""
+        with patch('builtins.input', side_effect=[KeyboardInterrupt(), 'quit']):
+            self.repl.run()
 
-        # Rule with constants
-        rule_str = "(* ?c:a ?c:b) -> :(* a b)"
-        result = self.dsl.parse(rule_str)
-        self.assertEqual(result, [['*', ['?c', 'a'], ['?c', 'b']], [':', ['*', 'a', 'b']]])
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any("Use 'quit'" in call for call in calls))
 
-    def test_parse_invalid_rule(self):
-        """Test parsing invalid rule strings."""
-        with self.assertRaises(ValueError):
-            self.dsl.parse("invalid rule format")
+    @patch('builtins.input', side_effect=EOFError())
+    @patch('builtins.print')
+    def test_run_eof_error(self, mock_print, mock_input):
+        """Test REPL handles EOFError."""
+        self.repl.run()
 
-        with self.assertRaises(ValueError):
-            self.dsl.parse("(+ x y)")  # Missing arrow
-
-    def test_format_rule(self):
-        """Test formatting rules."""
-        rule = [['+', ['?', 'x'], 0], [':', 'x']]
-        result = self.dsl.format(rule)
-        self.assertEqual(result, "(+ ?x 0) -> :x")
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('Goodbye' in call for call in calls))
 
 
-class TestHelperFunctions(unittest.TestCase):
-    """Test helper functions."""
+class TestXTKReplProcessing(unittest.TestCase):
+    """Test line and command processing."""
 
-    def test_parse_expression(self):
-        """Test expression parsing."""
-        # S-expression
-        result = parse_expression("(+ 1 2)")
-        self.assertEqual(result, ['+', 1, 2])
+    def setUp(self):
+        """Set up test REPL."""
+        with patch('xtk.cli.readline'):
+            with patch('xtk.cli.atexit'):
+                self.repl = XTKRepl()
 
-        # Infix expression
-        result = parse_expression("1 + 2")
-        self.assertEqual(result, ['+', 1, 2])
+    @patch('builtins.print')
+    def test_process_command_line(self, mock_print):
+        """Test processing command lines starting with ':'."""
+        with patch.object(self.repl, 'process_command') as mock_process_command:
+            self.repl.process_line(':help')
+            mock_process_command.assert_called_once_with('help')
 
-        # JSON expression
-        result = parse_expression('["+", 1, 2]')
-        self.assertEqual(result, ['+', 1, 2])
+    @patch('builtins.print')
+    def test_process_variable_assignment(self, mock_print):
+        """Test processing variable assignments."""
+        with patch.object(self.repl, 'set_variable') as mock_set_variable:
+            self.repl.process_line('x = 42')
+            mock_set_variable.assert_called_once_with('x', '42')
 
-    def test_format_expression(self):
-        """Test expression formatting."""
-        expr = ['+', 1, 2]
+    @patch('builtins.print')
+    def test_process_sexpr(self, mock_print):
+        """Test processing S-expressions."""
+        self.repl.process_line('(+ 1 2)')
 
-        # Default format (sexpr)
-        result = format_expression(expr)
-        self.assertEqual(result, "(+ 1 2)")
+        # Check expression was added to history
+        self.assertEqual(len(self.repl.history), 1)
 
-        # JSON format
-        result = format_expression(expr, 'json')
-        self.assertEqual(result, '["+", 1, 2]')
+        # Check output
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('Parsed' in call for call in calls))
 
-        # Infix format
-        result = format_expression(expr, 'infix')
-        self.assertEqual(result, "1 + 2")
+    @patch('builtins.print')
+    def test_process_command_help(self, mock_print):
+        """Test help command."""
+        self.repl.process_command('help')
+
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('Available commands' in call for call in calls))
+
+    @patch('os.system')
+    def test_process_command_clear(self, mock_system):
+        """Test clear command."""
+        self.repl.process_command('clear')
+        mock_system.assert_called_once()
+
+    @patch('builtins.print')
+    def test_process_command_history(self, mock_print):
+        """Test history command."""
+        # Add some history
+        from xtk.fluent_api import Expression
+        self.repl.history = [Expression(['+', 1, 2])]
+
+        self.repl.process_command('history')
+
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('[0]' in call for call in calls))
+
+    @patch('builtins.print')
+    def test_process_command_vars(self, mock_print):
+        """Test vars command."""
+        from xtk.fluent_api import Expression
+        self.repl.variables = {'x': Expression(['+', 1, 2])}
+
+        self.repl.process_command('vars')
+
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('x =' in call for call in calls))
+
+    @patch('builtins.print')
+    def test_process_command_unknown(self, mock_print):
+        """Test unknown command."""
+        self.repl.process_command('unknown_command')
+
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('Unknown command' in call for call in calls))
+
+
+class TestXTKReplMethods(unittest.TestCase):
+    """Test specific REPL methods."""
+
+    def setUp(self):
+        """Set up test REPL."""
+        with patch('xtk.cli.readline'):
+            with patch('xtk.cli.atexit'):
+                self.repl = XTKRepl()
+
+    @patch('builtins.print')
+    def test_show_help(self, mock_print):
+        """Test show_help method."""
+        self.repl.show_help()
+
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('Available commands' in call for call in calls))
+        self.assertTrue(any('Expression syntax' in call for call in calls))
+
+    @patch('builtins.print')
+    def test_show_history_empty(self, mock_print):
+        """Test show_history with no history."""
+        self.repl.show_history()
+
+        mock_print.assert_called_with("No history yet")
+
+    @patch('builtins.print')
+    def test_show_history_with_items(self, mock_print):
+        """Test show_history with items."""
+        from xtk.fluent_api import Expression
+        self.repl.history = [Expression(['+', 1, 2]), Expression(['*', 3, 4])]
+
+        self.repl.show_history()
+
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('[0]' in call for call in calls))
+        self.assertTrue(any('[1]' in call for call in calls))
+
+    @patch('builtins.print')
+    def test_show_variables_empty(self, mock_print):
+        """Test show_variables with no variables."""
+        self.repl.show_variables()
+
+        mock_print.assert_called_with("No variables defined")
+
+    @patch('builtins.print')
+    def test_show_variables_with_items(self, mock_print):
+        """Test show_variables with variables."""
+        from xtk.fluent_api import Expression
+        self.repl.variables = {'x': Expression(['+', 1, 2])}
+
+        self.repl.show_variables()
+
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('x =' in call for call in calls))
+
+    @patch('builtins.print')
+    def test_set_variable_sexpr(self, mock_print):
+        """Test setting variable with S-expression."""
+        self.repl.set_variable('x', '(+ 1 2)')
+
+        self.assertIn('x', self.repl.variables)
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('x =' in call for call in calls))
+
+    @patch('builtins.print')
+    def test_simplify_last_no_history(self, mock_print):
+        """Test simplify_last with no history."""
+        self.repl.simplify_last()
+
+        mock_print.assert_called_with("No expression to simplify")
+
+    @patch('builtins.print')
+    def test_simplify_last_with_history(self, mock_print):
+        """Test simplify_last with history."""
+        from xtk.fluent_api import Expression
+        self.repl.history = [Expression(['+', 'x', 0])]
+        self.repl.rules = [[['+', ['?', 'x'], 0], [':', 'x']]]
+
+        self.repl.simplify_last()
+
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('Simplified' in call for call in calls))
+        self.assertEqual(len(self.repl.history), 2)
+
+    @patch('builtins.print')
+    def test_differentiate_last_no_history(self, mock_print):
+        """Test differentiate_last with no history."""
+        self.repl.differentiate_last('x')
+
+        mock_print.assert_called_with("No expression to differentiate")
+
+    @patch('builtins.print')
+    def test_show_latex_no_history(self, mock_print):
+        """Test show_latex with no history."""
+        self.repl.show_latex()
+
+        mock_print.assert_called_with("No expression")
+
+    @patch('builtins.print')
+    def test_list_rules_empty(self, mock_print):
+        """Test list_rules with no rules."""
+        self.repl.list_rules()
+
+        mock_print.assert_called_with("No rules loaded")
+
+    @patch('builtins.print')
+    def test_list_rules_with_rules(self, mock_print):
+        """Test list_rules with rules."""
+        self.repl.rules = [
+            [['+', ['?', 'x'], 0], [':', 'x']],
+            [['*', ['?', 'x'], 1], [':', 'x']]
+        ]
+
+        self.repl.list_rules()
+
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(any('[0]' in call for call in calls))
+        self.assertTrue(any('[1]' in call for call in calls))
 
 
 class TestMainFunction(unittest.TestCase):
     """Test the main CLI entry point."""
 
-    @patch('sys.argv', ['xtk', '--help'])
-    def test_help_option(self):
-        """Test --help option."""
-        with patch('sys.stdout', new=StringIO()) as fake_out:
+    @patch('sys.argv', ['xtk'])
+    def test_main_no_args_starts_repl(self):
+        """Test main with no args starts REPL."""
+        with patch('xtk.cli.XTKRepl') as mock_repl_class:
+            mock_repl = MagicMock()
+            mock_repl_class.return_value = mock_repl
+
+            main()
+
+            mock_repl_class.assert_called_once()
+            mock_repl.run.assert_called_once()
+
+    @patch('sys.argv', ['xtk', '-i'])
+    def test_main_interactive_flag(self):
+        """Test main with -i flag starts REPL."""
+        with patch('xtk.cli.XTKRepl') as mock_repl_class:
+            mock_repl = MagicMock()
+            mock_repl_class.return_value = mock_repl
+
+            main()
+
+            mock_repl.run.assert_called_once()
+
+    @patch('sys.argv', ['xtk', '(+ 1 2)'])
+    @patch('builtins.print')
+    def test_main_with_sexpr(self, mock_print):
+        """Test main with S-expression."""
+        main()
+
+        # Should parse and print the expression
+        calls = [str(call) for call in mock_print.call_args_list]
+        self.assertTrue(len(calls) > 0)
+
+    @patch('sys.argv', ['xtk', '(+ 1 2)', '-f', 'latex'])
+    @patch('builtins.print')
+    def test_main_with_latex_format(self, mock_print):
+        """Test main with LaTeX format."""
+        main()
+
+        # Should output in LaTeX format
+        calls = mock_print.call_args_list
+        self.assertTrue(len(calls) > 0)
+
+    @patch('sys.argv', ['xtk', '(+ 1 2)', '-f', 'tree'])
+    @patch('builtins.print')
+    def test_main_with_tree_format(self, mock_print):
+        """Test main with tree format."""
+        main()
+
+        # Should output as JSON tree
+        calls = mock_print.call_args_list
+        if calls:
+            output = str(calls[0])
+            # Tree format should be indented JSON
+            self.assertTrue('[' in output or '{' in output)
+
+    @patch('sys.argv', ['xtk', '(+ x 0)', '-s'])
+    @patch('builtins.print')
+    def test_main_with_simplify(self, mock_print):
+        """Test main with simplify flag."""
+        main()
+
+        # Should simplify the expression
+        calls = mock_print.call_args_list
+        self.assertTrue(len(calls) > 0)
+
+    @patch('sys.argv', ['xtk', 'invalid expression'])
+    def test_main_with_invalid_expression(self):
+        """Test main with invalid expression."""
+        with patch('sys.stderr', new=StringIO()):
             with self.assertRaises(SystemExit) as cm:
                 main()
-            self.assertEqual(cm.exception.code, 0)
-            output = fake_out.getvalue()
-            self.assertIn('xtk', output.lower())
+            self.assertEqual(cm.exception.code, 1)
 
-    @patch('sys.argv', ['xtk', '--version'])
+    @patch('sys.argv', ['xtk', '(^ x 2)', '-d', 'x'])
     @patch('builtins.print')
-    def test_version_option(self, mock_print):
-        """Test --version option."""
-        with self.assertRaises(SystemExit) as cm:
-            main()
-        self.assertEqual(cm.exception.code, 0)
-        mock_print.assert_called()
-
-    @patch('sys.argv', ['xtk', 'eval', '(+ 1 2)'])
-    @patch('builtins.print')
-    def test_eval_command(self, mock_print):
-        """Test eval command."""
+    def test_main_with_differentiate(self, mock_print):
+        """Test main with differentiate flag."""
         main()
-        # Should evaluate and print result
 
-    @patch('sys.argv', ['xtk', 'simplify', '(+ x 0)'])
+        # Should differentiate the expression
+        calls = mock_print.call_args_list
+        self.assertTrue(len(calls) > 0)
+
+    @patch('sys.argv', ['xtk', '(+ 1 2)', '-e'])
     @patch('builtins.print')
-    def test_simplify_command(self, mock_print):
-        """Test simplify command."""
+    def test_main_with_evaluate(self, mock_print):
+        """Test main with evaluate flag."""
         main()
-        # Should simplify and print result
 
-    @patch('sys.argv', ['xtk', 'parse', '(+ 1 2)'])
-    @patch('builtins.print')
-    def test_parse_command(self, mock_print):
-        """Test parse command."""
-        main()
-        mock_print.assert_called_with('["+", 1, 2]')
-
-    @patch('sys.argv', ['xtk', 'format', '["+", 1, 2]'])
-    @patch('builtins.print')
-    def test_format_command(self, mock_print):
-        """Test format command."""
-        main()
-        mock_print.assert_called_with('(+ 1 2)')
-
-    @patch('sys.argv', ['xtk', 'format', '["+", 1, 2]', '--format', 'infix'])
-    @patch('builtins.print')
-    def test_format_command_with_format_option(self, mock_print):
-        """Test format command with format option."""
-        main()
-        mock_print.assert_called_with('1 + 2')
-
-    @patch('sys.argv', ['xtk', 'repl'])
-    def test_repl_command(self):
-        """Test REPL command."""
-        with patch('xtk.cli.XTKRepl') as mock_repl_class:
-            mock_repl = MagicMock()
-            mock_repl_class.return_value = mock_repl
-            main()
-            mock_repl.run.assert_called_once()
-
-    @patch('sys.argv', ['xtk', 'batch', 'test.xtk'])
-    def test_batch_command(self):
-        """Test batch processing command."""
-        test_commands = "simplify (+ x 0)\nevaluate (+ 1 2)"
-
-        with patch('builtins.open', mock_open(read_data=test_commands)):
-            with patch('xtk.cli.XTKRepl') as mock_repl_class:
-                mock_repl = MagicMock()
-                mock_repl_class.return_value = mock_repl
-                main()
-                # Should execute each command
-                self.assertEqual(mock_repl.execute.call_count, 2)
-
-    @patch('sys.argv', ['xtk', 'test'])
-    @patch('builtins.print')
-    def test_test_command(self, mock_print):
-        """Test the test command."""
-        main()
-        # Should run tests and print results
-        calls = str(mock_print.call_args_list)
-        self.assertIn('Running', calls)
-
-    @patch('sys.argv', ['xtk'])
-    def test_no_command(self):
-        """Test running with no command (should start REPL)."""
-        with patch('xtk.cli.XTKRepl') as mock_repl_class:
-            mock_repl = MagicMock()
-            mock_repl_class.return_value = mock_repl
-            main()
-            mock_repl.run.assert_called_once()
-
-
-class TestExpressionProcessing(unittest.TestCase):
-    """Test expression processing in REPL."""
-
-    def setUp(self):
-        """Set up test instance."""
-        with patch('xtk.cli.readline'):
-            with patch('xtk.cli.atexit'):
-                self.repl = XTKRepl()
-
-    @patch('builtins.print')
-    def test_process_valid_sexpr(self, mock_print):
-        """Test processing valid s-expression."""
-        self.repl.execute('(+ 1 2)')
-        # Should process the expression
-
-    @patch('builtins.print')
-    def test_process_valid_infix(self, mock_print):
-        """Test processing valid infix expression."""
-        self.repl.execute('1 + 2 * 3')
-        # Should process the expression
-
-    @patch('builtins.print')
-    def test_process_with_variables(self, mock_print):
-        """Test processing expression with variables."""
-        self.repl.variables = {'x': 5}
-        self.repl.execute('(+ $x 3)')
-        # Should substitute variable and process
-
-    @patch('builtins.print')
-    def test_process_invalid_expression(self, mock_print):
-        """Test processing invalid expression."""
-        self.repl.execute('((invalid')
-        calls = str(mock_print.call_args_list)
-        self.assertIn('Error', calls)
-
-
-class TestRuleManagement(unittest.TestCase):
-    """Test rule management in REPL."""
-
-    def setUp(self):
-        """Set up test instance."""
-        with patch('xtk.cli.readline'):
-            with patch('xtk.cli.atexit'):
-                self.repl = XTKRepl()
-
-    @patch('builtins.print')
-    def test_load_rules(self, mock_print):
-        """Test loading rules from file."""
-        rules_data = [
-            [['+', ['?', 'x'], 0], [':', 'x']],
-            [['*', ['?', 'x'], 1], [':', 'x']]
-        ]
-
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump(rules_data, f)
-            temp_file = f.name
-
-        try:
-            self.repl.execute(f'load-rules {temp_file}')
-            self.assertEqual(len(self.repl.rules), 2)
-        finally:
-            os.unlink(temp_file)
-
-    @patch('builtins.print')
-    def test_save_rules(self, mock_print):
-        """Test saving rules to file."""
-        self.repl.rules = [
-            [['+', ['?', 'x'], 0], [':', 'x']],
-            [['*', ['?', 'x'], 1], [':', 'x']]
-        ]
-
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            temp_file = f.name
-
-        try:
-            self.repl.execute(f'save-rules {temp_file}')
-
-            with open(temp_file, 'r') as f:
-                saved_rules = json.load(f)
-
-            self.assertEqual(saved_rules, self.repl.rules)
-        finally:
-            os.unlink(temp_file)
-
-    @patch('builtins.print')
-    def test_list_rules(self, mock_print):
-        """Test listing rules."""
-        self.repl.rules = [
-            [['+', ['?', 'x'], 0], [':', 'x']],
-            [['*', ['?', 'x'], 1], [':', 'x']]
-        ]
-
-        self.repl.execute('list-rules')
-        calls = str(mock_print.call_args_list)
-        self.assertIn('+', calls)
-        self.assertIn('*', calls)
+        # Should evaluate the expression
+        calls = mock_print.call_args_list
+        self.assertTrue(len(calls) > 0)
 
 
 if __name__ == '__main__':

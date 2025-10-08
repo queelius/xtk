@@ -339,16 +339,17 @@ def evaluate(form: ExprType, dict_: DictType) -> ExprType:
     return form
 
 
-def simplifier(the_rules: List[RuleType], step_logger: Optional[StepLogger] = None) -> Callable:
+def rewriter(the_rules: List[RuleType], step_logger: Optional[StepLogger] = None, constant_folding: bool = True) -> Callable:
     """
-    Create a simplifier function using given rules.
-    
+    Create a rewriter function using given rules.
+
     Args:
         the_rules: List of transformation rules
         step_logger: Optional step logger for tracking transformations
-        
+        constant_folding: Enable automatic constant folding (default: True)
+
     Returns:
-        A function that simplifies expressions
+        A function that rewrites expressions
     """
     def simplify_exp(exp, is_root=False):
         """Simplify an expression using the rules."""
@@ -363,20 +364,27 @@ def simplifier(the_rules: List[RuleType], step_logger: Optional[StepLogger] = No
         while iterations < max_iterations:
             iterations += 1
             old_exp = deepcopy(exp)
-            
+
             # Try applying rules
             result = try_rules(exp)
             if result != exp:
                 exp = result
                 continue
-            
+
+            # Try constant folding (arithmetic evaluation) if enabled
+            if constant_folding:
+                result = try_constant_fold(exp)
+                if result != exp:
+                    exp = result
+                    continue
+
             # If compound, simplify parts
             if compound(exp):
                 result = simplify_parts(exp)
                 if result != exp:
                     exp = result
                     continue
-            
+
             # No changes, we're done
             if exp == old_exp:
                 break
@@ -393,6 +401,49 @@ def simplifier(the_rules: List[RuleType], step_logger: Optional[StepLogger] = No
         else:
             return cons(simplify_exp(car(exp)), simplify_parts(cdr(exp)))
     
+    def try_constant_fold(exp):
+        """Try to evaluate arithmetic on constant operands."""
+        if not compound(exp):
+            return exp
+
+        op = car(exp)
+        args = cdr(exp)
+
+        # Check if all arguments are numeric constants
+        if not all(isinstance(arg, (int, float)) for arg in args):
+            return exp
+
+        # Evaluate arithmetic operations
+        try:
+            if op == '+' and len(args) == 2:
+                result = args[0] + args[1]
+            elif op == '-' and len(args) == 2:
+                result = args[0] - args[1]
+            elif op == '-' and len(args) == 1:
+                result = -args[0]
+            elif op == '*' and len(args) == 2:
+                result = args[0] * args[1]
+            elif op == '/' and len(args) == 2:
+                result = args[0] / args[1] if args[1] != 0 else exp
+            elif op == '^' and len(args) == 2:
+                result = args[0] ** args[1]
+            else:
+                return exp
+
+            # Log constant folding if logger is available
+            if step_logger:
+                step_logger.log_rewrite(
+                    before=exp,
+                    after=result,
+                    rule_pattern=f"constant-fold-{op}",
+                    rule_skeleton=result,
+                    bindings=[]
+                )
+
+            return result
+        except:
+            return exp
+
     def try_rules(exp):
         """Try applying rules to an expression."""
         def scan(rules):
@@ -402,13 +453,13 @@ def simplifier(the_rules: List[RuleType], step_logger: Optional[StepLogger] = No
                 rule = car(rules)
                 pat = pattern(rule)
                 skel = skeleton(rule)
-                
+
                 dict_ = match(pat, exp, empty_dictionary())
                 if dict_ == "failed":
                     return scan(cdr(rules))
                 else:
                     skel_inst = instantiate(skel, dict_)
-                    
+
                     # Log the rewrite if logger is available
                     if step_logger:
                         step_logger.log_rewrite(
@@ -418,13 +469,17 @@ def simplifier(the_rules: List[RuleType], step_logger: Optional[StepLogger] = No
                             rule_skeleton=skel,
                             bindings=dict_
                         )
-                    
+
                     return simplify_exp(skel_inst)
-        
+
         return scan(the_rules)
     
     # Return a wrapper that sets is_root=True for the initial call
     def wrapper(exp):
         return simplify_exp(exp, is_root=True)
-    
+
     return wrapper
+
+
+# Backwards compatibility alias
+simplifier = rewriter

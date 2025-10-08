@@ -17,7 +17,7 @@ from xtk import (
     empty_dictionary
 )
 from xtk.rules.algebra_rules import simplify_rules
-from xtk.rules.deriv_rules_fixed import deriv_rules_fixed
+from xtk.rules.deriv_rules import deriv_rules_fixed
 
 
 class TestHomoiconicNature(unittest.TestCase):

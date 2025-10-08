@@ -72,14 +72,14 @@ test-cov:
 .PHONY: format
 format:
 	@echo "Formatting code with black..."
-	@$(VENV_PYTHON) -m black src/ tests/ examples/ 2>/dev/null || echo "Install black with: make install-dev"
+	@$(VENV_PYTHON) -m black src/ tests/ examples/ || echo "Install black with: make install-dev"
 	@echo "✓ Code formatted"
 
 # Lint code
 .PHONY: lint
 lint:
 	@echo "Checking code style..."
-	@$(VENV_PYTHON) -m flake8 src/ tests/ --max-line-length=100 --ignore=E203,W503 2>/dev/null || echo "Install flake8 with: make install-dev"
+	@$(VENV_PYTHON) -m flake8 src/ tests/ --max-line-length=100 --ignore=E203,W503 || echo "Install flake8 with: make install-dev"
 	@echo "✓ Linting complete"
 
 # Run all checks
@@ -91,7 +91,7 @@ check: lint test
 .PHONY: demo
 demo:
 	@echo "Running demo examples..."
-	@$(VENV_PYTHON) examples/simple_step_logging.py 2>/dev/null || echo "First run: make install"
+	@$(VENV_PYTHON) examples/dsl_demo.py || echo "First run: make install"
 	@echo "✓ Demo complete"
 
 # Start REPL
@@ -104,7 +104,7 @@ repl:
 .PHONY: build
 build: clean
 	@echo "Building distribution packages..."
-	@$(PYTHON) -m build 2>/dev/null || (echo "Installing build tools..." && pip install build && $(PYTHON) -m build)
+	@$(PYTHON) -m build || (echo "Installing build tools..." && pip install build && $(PYTHON) -m build)
 	@echo "✓ Packages built in dist/"
 
 # Clean up
