@@ -237,14 +237,16 @@ class TestExpression(unittest.TestCase):
     def test_differentiate(self):
         """Test differentiation."""
         expr = Expression(['^', 'x', 2])
-        
-        # This would need the derivative rules to work properly
-        # For now, just test that it returns an Expression
+
+        # Differentiate applies derivative rules and simplifies
         result = expr.differentiate('x')
         self.assertIsInstance(result, Expression)
-        
-        # Should create a derivative expression
-        self.assertEqual(result.expr[0], 'dd')
+
+        # d/dx(x^2) = 2*x^1 which simplifies to 2*x
+        # The result should be a multiplication
+        self.assertEqual(result.expr[0], '*')
+        # Should contain the constant 2
+        self.assertIn(2, result.expr)
     
     def test_substitute(self):
         """Test substitution."""
@@ -540,6 +542,104 @@ class TestIntegrationFluentAPI(unittest.TestCase):
         
         # x^2 + 2x + 1 at x=3 should be 9 + 6 + 1 = 16
         self.assertEqual(result.expr, 16)
+
+
+class TestASCIIRendering(unittest.TestCase):
+    """Test ASCII art rendering functionality."""
+
+    def test_simple_fraction(self):
+        """Test rendering a simple fraction."""
+        expr = Expression(['/', 'x', 'y'])
+        result = expr.to_ascii()
+
+        self.assertIsInstance(result, list)
+        self.assertTrue(len(result) > 1)  # Should have multiple lines
+        # Should contain both x and y
+        result_str = '\n'.join(result)
+        self.assertIn('x', result_str)
+        self.assertIn('y', result_str)
+        # Should contain a horizontal line
+        self.assertTrue(any('─' in line for line in result))
+
+    def test_numeric_fraction(self):
+        """Test rendering a numeric fraction."""
+        expr = Expression(['/', 1, 2])
+        result = expr.to_ascii()
+
+        self.assertIsInstance(result, list)
+        result_str = '\n'.join(result)
+        self.assertIn('1', result_str)
+        self.assertIn('2', result_str)
+
+    def test_power_expression(self):
+        """Test rendering power/exponent expressions."""
+        expr = Expression(['^', 'x', 2])
+        result = expr.to_ascii()
+
+        self.assertIsInstance(result, list)
+        result_str = '\n'.join(result)
+        self.assertIn('x', result_str)
+        # Power is rendered as superscript (x²) or contains the exponent
+        self.assertTrue('²' in result_str or '2' in result_str)
+
+    def test_derivative_expression(self):
+        """Test rendering derivative expressions."""
+        expr = Expression(['dd', ['^', 'x', 2], 'x'])
+        result = expr.to_ascii()
+
+        self.assertIsInstance(result, list)
+        result_str = '\n'.join(result)
+        # Should contain d/dx notation or similar
+        self.assertTrue(len(result_str) > 0)
+
+    def test_complex_fraction(self):
+        """Test rendering complex nested fraction."""
+        expr = Expression(['/', ['+', 'x', 1], ['-', 'y', 2]])
+        result = expr.to_ascii()
+
+        self.assertIsInstance(result, list)
+        self.assertTrue(len(result) >= 3)  # Numerator, line, denominator
+        result_str = '\n'.join(result)
+        self.assertIn('x', result_str)
+        self.assertIn('y', result_str)
+
+    def test_simple_variable(self):
+        """Test rendering simple variable."""
+        expr = Expression('x')
+        result = expr.to_ascii()
+
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], 'x')
+
+    def test_simple_number(self):
+        """Test rendering simple number."""
+        expr = Expression(42)
+        result = expr.to_ascii()
+
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], '42')
+
+    def test_addition_expression(self):
+        """Test rendering addition expression."""
+        expr = Expression(['+', 'x', 'y'])
+        result = expr.to_ascii()
+
+        self.assertIsInstance(result, list)
+        result_str = '\n'.join(result)
+        # Should contain x, y, and + in some form
+        self.assertIn('x', result_str)
+        self.assertIn('y', result_str)
+
+    def test_nested_power(self):
+        """Test rendering nested power expression."""
+        expr = Expression(['^', ['^', 'x', 2], 3])
+        result = expr.to_ascii()
+
+        self.assertIsInstance(result, list)
+        result_str = '\n'.join(result)
+        self.assertIn('x', result_str)
 
 
 if __name__ == '__main__':

@@ -49,6 +49,21 @@ from .rule_loader import (
     merge_rules,
 )
 
+# Rule utilities and explanations
+from .rule_utils import (
+    RichRule,
+    normalize_rules,
+    get_rule_metadata,
+)
+
+from .explainer import (
+    RewriteExplainer,
+    LLMProvider,
+    AnthropicProvider,
+    OpenAIProvider,
+    OllamaProvider,
+)
+
 # CLI and REPL
 from .cli import (
     XTKRepl,
@@ -97,11 +112,21 @@ __all__ = [
     "save_rules",
     "parse_rules",
     "merge_rules",
-    
+
+    # Rule utilities and explanations
+    "RichRule",
+    "normalize_rules",
+    "get_rule_metadata",
+    "RewriteExplainer",
+    "LLMProvider",
+    "AnthropicProvider",
+    "OpenAIProvider",
+    "OllamaProvider",
+
     # CLI
     "XTKRepl",
     "cli_main",
-    
+
     # Rules
     "deriv_rules_fixed",
     "simplify_rules",

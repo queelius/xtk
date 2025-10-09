@@ -88,10 +88,11 @@ class TestSimplifierFixed(unittest.TestCase):
         result = simplify(expression)
         self.assertEqual(result, 'x', "x + 0 should simplify to x")
 
-        # Should NOT match - 3 is a constant
+        # Should NOT match variable pattern - 3 is a constant
+        # But constant folding will evaluate it to 3 anyway
         expression = ['+', 3, 0]
         result = simplify(expression)
-        self.assertEqual(result, ['+', 3, 0], "3 + 0 should not match variable pattern")
+        self.assertEqual(result, 3, "3 + 0 evaluates to 3 via constant folding")
 
     def test_simplify_constant_patterns(self):
         """Test simplifier with constant-specific patterns."""

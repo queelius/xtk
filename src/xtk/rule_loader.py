@@ -152,9 +152,14 @@ def extract_sexprs(text: str) -> List[str]:
 
 
 def is_rule_format(expr) -> bool:
-    """Check if expression is a complete rule [pattern, skeleton]."""
-    return (isinstance(expr, list) and 
-            len(expr) == 2 and 
+    """Check if expression is a complete rule [pattern, skeleton] or rich rule dict."""
+    # Rich rule dict format
+    if isinstance(expr, dict) and 'pattern' in expr and 'skeleton' in expr:
+        return True
+
+    # Simple [pattern, skeleton] format
+    return (isinstance(expr, list) and
+            len(expr) == 2 and
             isinstance(expr[0], (list, str, int, float)) and
             isinstance(expr[1], (list, str, int, float)))
 

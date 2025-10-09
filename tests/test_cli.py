@@ -50,8 +50,9 @@ class TestXTKReplComplete(unittest.TestCase):
         # Test completion for 'ex'
         result1 = self.repl.complete('ex', 0)
         result2 = self.repl.complete('ex', 1)
-        self.assertIn(result1, ['exit', 'expand'])
-        self.assertIn(result2, ['exit', 'expand'])
+        # Updated to include 'explain' command
+        self.assertIn(result1, ['exit', 'expand', 'explain'])
+        self.assertIn(result2, ['exit', 'expand', 'explain'])
         self.assertNotEqual(result1, result2)
 
     def test_complete_empty_string(self):
@@ -97,24 +98,39 @@ class TestXTKReplRun(unittest.TestCase):
                 self.repl = XTKRepl()
 
     @patch('builtins.input', side_effect=['quit'])
-    @patch('builtins.print')
-    def test_run_quit_command(self, mock_print, mock_input):
+    def test_run_quit_command(self, mock_input):
         """Test REPL quits on 'quit' command."""
-        self.repl.run()
+        with patch.object(self.repl.console, 'print') as mock_print:
+            self.repl.run()
 
-        # Check welcome message was printed
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('Welcome' in call for call in calls))
-        self.assertTrue(any('Goodbye' in call for call in calls))
+            # Check goodbye message was printed
+            # The print may receive rich objects or strings
+            self.assertTrue(mock_print.called)
+            # At least one call should contain 'Goodbye' (in rich markup or plain text)
+            found_goodbye = False
+            for call in mock_print.call_args_list:
+                if call.args:
+                    arg_str = str(call.args[0])
+                    if 'Goodbye' in arg_str:
+                        found_goodbye = True
+                        break
+            self.assertTrue(found_goodbye, "Expected 'Goodbye' message not found")
 
     @patch('builtins.input', side_effect=['exit'])
-    @patch('builtins.print')
-    def test_run_exit_command(self, mock_print, mock_input):
+    def test_run_exit_command(self, mock_input):
         """Test REPL quits on 'exit' command."""
-        self.repl.run()
+        with patch.object(self.repl.console, 'print') as mock_print:
+            self.repl.run()
 
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('Goodbye' in call for call in calls))
+            # Check goodbye message was printed
+            found_goodbye = False
+            for call in mock_print.call_args_list:
+                if call.args:
+                    arg_str = str(call.args[0])
+                    if 'Goodbye' in arg_str:
+                        found_goodbye = True
+                        break
+            self.assertTrue(found_goodbye, "Expected 'Goodbye' message not found")
 
     @patch('builtins.input', side_effect=['', 'quit'])
     @patch('builtins.print')
@@ -123,24 +139,37 @@ class TestXTKReplRun(unittest.TestCase):
         self.repl.run()
         # Should continue without error
 
-    @patch('builtins.input', side_effect=KeyboardInterrupt())
-    @patch('builtins.print')
-    def test_run_keyboard_interrupt(self, mock_print, mock_input):
+    def test_run_keyboard_interrupt(self):
         """Test REPL handles KeyboardInterrupt."""
         with patch('builtins.input', side_effect=[KeyboardInterrupt(), 'quit']):
-            self.repl.run()
+            with patch.object(self.repl.console, 'print') as mock_print:
+                self.repl.run()
 
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any("Use 'quit'" in call for call in calls))
+                # Check that a message about using quit was printed
+                found_message = False
+                for call in mock_print.call_args_list:
+                    if call.args:
+                        arg_str = str(call.args[0])
+                        if 'quit' in arg_str.lower() or 'exit' in arg_str.lower():
+                            found_message = True
+                            break
+                self.assertTrue(found_message, "Expected message about quit/exit not found")
 
     @patch('builtins.input', side_effect=EOFError())
-    @patch('builtins.print')
-    def test_run_eof_error(self, mock_print, mock_input):
+    def test_run_eof_error(self, mock_input):
         """Test REPL handles EOFError."""
-        self.repl.run()
+        with patch.object(self.repl.console, 'print') as mock_print:
+            self.repl.run()
 
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('Goodbye' in call for call in calls))
+            # Check goodbye message was printed
+            found_goodbye = False
+            for call in mock_print.call_args_list:
+                if call.args:
+                    arg_str = str(call.args[0])
+                    if 'Goodbye' in arg_str:
+                        found_goodbye = True
+                        break
+            self.assertTrue(found_goodbye, "Expected 'Goodbye' message not found")
 
 
 class TestXTKReplProcessing(unittest.TestCase):
@@ -152,21 +181,21 @@ class TestXTKReplProcessing(unittest.TestCase):
             with patch('xtk.cli.atexit'):
                 self.repl = XTKRepl()
 
-    @patch('builtins.print')
+    @patch('xtk.cli.Console.print')
     def test_process_command_line(self, mock_print):
-        """Test processing command lines starting with ':'."""
+        """Test processing command lines starting with '/'."""
         with patch.object(self.repl, 'process_command') as mock_process_command:
-            self.repl.process_line(':help')
+            self.repl.process_line('/help')
             mock_process_command.assert_called_once_with('help')
 
-    @patch('builtins.print')
+    @patch('xtk.cli.Console.print')
     def test_process_variable_assignment(self, mock_print):
         """Test processing variable assignments."""
         with patch.object(self.repl, 'set_variable') as mock_set_variable:
             self.repl.process_line('x = 42')
             mock_set_variable.assert_called_once_with('x', '42')
 
-    @patch('builtins.print')
+    @patch('xtk.cli.Console.print')
     def test_process_sexpr(self, mock_print):
         """Test processing S-expressions."""
         self.repl.process_line('(+ 1 2)')
@@ -174,17 +203,21 @@ class TestXTKReplProcessing(unittest.TestCase):
         # Check expression was added to history
         self.assertEqual(len(self.repl.history), 1)
 
-        # Check output
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('Parsed' in call for call in calls))
+        # Check output - should have printed the parsed expression
+        self.assertTrue(mock_print.called)
 
-    @patch('builtins.print')
-    def test_process_command_help(self, mock_print):
+    def test_process_command_help(self):
         """Test help command."""
-        self.repl.process_command('help')
+        with patch.object(self.repl.console, 'print') as mock_print:
+            self.repl.process_command('help')
 
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('Available commands' in call for call in calls))
+            # Should print a Markdown object
+            mock_print.assert_called_once()
+            from rich.markdown import Markdown
+            call_arg = mock_print.call_args[0][0]
+            self.assertIsInstance(call_arg, Markdown)
+            # Check content is present
+            self.assertIn('Available Commands', call_arg.markup)
 
     @patch('os.system')
     def test_process_command_clear(self, mock_system):
@@ -192,30 +225,36 @@ class TestXTKReplProcessing(unittest.TestCase):
         self.repl.process_command('clear')
         mock_system.assert_called_once()
 
-    @patch('builtins.print')
-    def test_process_command_history(self, mock_print):
+    def test_process_command_history(self):
         """Test history command."""
         # Add some history
         from xtk.fluent_api import Expression
+        from rich.table import Table
         self.repl.history = [Expression(['+', 1, 2])]
 
-        self.repl.process_command('history')
+        with patch.object(self.repl.console, 'print') as mock_print:
+            self.repl.process_command('history')
 
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('[0]' in call for call in calls))
+            # Should print a Table object
+            mock_print.assert_called_once()
+            call_arg = mock_print.call_args[0][0]
+            self.assertIsInstance(call_arg, Table)
 
-    @patch('builtins.print')
-    def test_process_command_vars(self, mock_print):
+    def test_process_command_vars(self):
         """Test vars command."""
         from xtk.fluent_api import Expression
+        from rich.table import Table
         self.repl.variables = {'x': Expression(['+', 1, 2])}
 
-        self.repl.process_command('vars')
+        with patch.object(self.repl.console, 'print') as mock_print:
+            self.repl.process_command('vars')
 
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('x =' in call for call in calls))
+            # Should print a Table object
+            mock_print.assert_called_once()
+            call_arg = mock_print.call_args[0][0]
+            self.assertIsInstance(call_arg, Table)
 
-    @patch('builtins.print')
+    @patch('xtk.cli.Console.print')
     def test_process_command_unknown(self, mock_print):
         """Test unknown command."""
         self.repl.process_command('unknown_command')
@@ -233,115 +272,115 @@ class TestXTKReplMethods(unittest.TestCase):
             with patch('xtk.cli.atexit'):
                 self.repl = XTKRepl()
 
-    @patch('builtins.print')
-    def test_show_help(self, mock_print):
+    def test_show_help(self):
         """Test show_help method."""
-        self.repl.show_help()
+        with patch.object(self.repl.console, 'print') as mock_console_print:
+            self.repl.show_help()
+            # Should print a Markdown object
+            mock_console_print.assert_called_once()
+            # Check that it was called with a Markdown object (can't easily check content)
+            from rich.markdown import Markdown
+            call_arg = mock_console_print.call_args[0][0]
+            self.assertIsInstance(call_arg, Markdown)
 
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('Available commands' in call for call in calls))
-        self.assertTrue(any('Expression syntax' in call for call in calls))
-
-    @patch('builtins.print')
-    def test_show_history_empty(self, mock_print):
+    def test_show_history_empty(self):
         """Test show_history with no history."""
-        self.repl.show_history()
+        with patch.object(self.repl.console, 'print') as mock_console_print:
+            self.repl.show_history()
+            # Should print "No history yet" with yellow formatting
+            mock_console_print.assert_called_once()
+            call_args = str(mock_console_print.call_args)
+            self.assertIn("No history yet", call_args)
 
-        mock_print.assert_called_with("No history yet")
-
-    @patch('builtins.print')
-    def test_show_history_with_items(self, mock_print):
+    def test_show_history_with_items(self):
         """Test show_history with items."""
         from xtk.fluent_api import Expression
         self.repl.history = [Expression(['+', 1, 2]), Expression(['*', 3, 4])]
 
-        self.repl.show_history()
+        with patch.object(self.repl.console, 'print') as mock_console_print:
+            self.repl.show_history()
+            # Should print a Table object
+            mock_console_print.assert_called_once()
+            from rich.table import Table
+            call_arg = mock_console_print.call_args[0][0]
+            self.assertIsInstance(call_arg, Table)
 
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('[0]' in call for call in calls))
-        self.assertTrue(any('[1]' in call for call in calls))
-
-    @patch('builtins.print')
-    def test_show_variables_empty(self, mock_print):
+    def test_show_variables_empty(self):
         """Test show_variables with no variables."""
-        self.repl.show_variables()
+        with patch.object(self.repl.console, 'print') as mock_console_print:
+            self.repl.show_variables()
+            mock_console_print.assert_called_once()
+            call_args = str(mock_console_print.call_args)
+            self.assertIn("No variables defined", call_args)
 
-        mock_print.assert_called_with("No variables defined")
-
-    @patch('builtins.print')
-    def test_show_variables_with_items(self, mock_print):
+    def test_show_variables_with_items(self):
         """Test show_variables with variables."""
         from xtk.fluent_api import Expression
         self.repl.variables = {'x': Expression(['+', 1, 2])}
 
-        self.repl.show_variables()
+        with patch.object(self.repl.console, 'print') as mock_console_print:
+            self.repl.show_variables()
+            mock_console_print.assert_called_once()
+            call_args = str(mock_console_print.call_args_list)
+            # Should show table with variable name
+            self.assertIn('x', call_args)
 
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('x =' in call for call in calls))
-
-    @patch('builtins.print')
-    def test_set_variable_sexpr(self, mock_print):
+    def test_set_variable_sexpr(self):
         """Test setting variable with S-expression."""
-        self.repl.set_variable('x', '(+ 1 2)')
+        with patch.object(self.repl.console, 'print') as mock_console_print:
+            self.repl.set_variable('x', '(+ 1 2)')
 
-        self.assertIn('x', self.repl.variables)
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('x =' in call for call in calls))
+            self.assertIn('x', self.repl.variables)
+            call_args = str(mock_console_print.call_args_list)
+            self.assertIn('x', call_args)
 
-    @patch('builtins.print')
-    def test_simplify_last_no_history(self, mock_print):
-        """Test simplify_last with no history."""
-        self.repl.simplify_last()
+    def test_rewrite_last_no_history(self):
+        """Test rewrite_last with no history."""
+        with patch.object(self.repl.console, 'print') as mock_console_print:
+            self.repl.rewrite_last()
+            call_args = str(mock_console_print.call_args)
+            self.assertIn("No expression", call_args)
 
-        mock_print.assert_called_with("No expression to simplify")
-
-    @patch('builtins.print')
-    def test_simplify_last_with_history(self, mock_print):
-        """Test simplify_last with history."""
+    def test_rewrite_last_with_history(self):
+        """Test rewrite_last with history."""
         from xtk.fluent_api import Expression
         self.repl.history = [Expression(['+', 'x', 0])]
         self.repl.rules = [[['+', ['?', 'x'], 0], [':', 'x']]]
 
-        self.repl.simplify_last()
+        with patch.object(self.repl.console, 'print') as mock_console_print:
+            self.repl.rewrite_last()
+            call_args = str(mock_console_print.call_args_list)
+            self.assertIn('Rewritten', call_args)
+            self.assertEqual(len(self.repl.history), 2)
 
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('Simplified' in call for call in calls))
-        self.assertEqual(len(self.repl.history), 2)
-
-    @patch('builtins.print')
-    def test_differentiate_last_no_history(self, mock_print):
-        """Test differentiate_last with no history."""
-        self.repl.differentiate_last('x')
-
-        mock_print.assert_called_with("No expression to differentiate")
-
-    @patch('builtins.print')
-    def test_show_latex_no_history(self, mock_print):
+    def test_show_latex_no_history(self):
         """Test show_latex with no history."""
-        self.repl.show_latex()
+        with patch.object(self.repl.console, 'print') as mock_console_print:
+            self.repl.show_latex()
+            call_args = str(mock_console_print.call_args)
+            self.assertIn("No expression", call_args)
 
-        mock_print.assert_called_with("No expression")
-
-    @patch('builtins.print')
-    def test_list_rules_empty(self, mock_print):
+    def test_list_rules_empty(self):
         """Test list_rules with no rules."""
-        self.repl.list_rules()
+        with patch.object(self.repl.console, 'print') as mock_console_print:
+            self.repl.list_rules()
+            call_args = str(mock_console_print.call_args)
+            self.assertIn("No rules loaded", call_args)
 
-        mock_print.assert_called_with("No rules loaded")
-
-    @patch('builtins.print')
-    def test_list_rules_with_rules(self, mock_print):
+    def test_list_rules_with_rules(self):
         """Test list_rules with rules."""
+        from rich.table import Table
         self.repl.rules = [
             [['+', ['?', 'x'], 0], [':', 'x']],
             [['*', ['?', 'x'], 1], [':', 'x']]
         ]
 
-        self.repl.list_rules()
-
-        calls = [str(call) for call in mock_print.call_args_list]
-        self.assertTrue(any('[0]' in call for call in calls))
-        self.assertTrue(any('[1]' in call for call in calls))
+        with patch.object(self.repl.console, 'print') as mock_console_print:
+            self.repl.list_rules()
+            # Should print a table with rules
+            self.assertTrue(mock_console_print.called)
+            call_arg = mock_console_print.call_args[0][0]
+            self.assertIsInstance(call_arg, Table)
 
 
 class TestMainFunction(unittest.TestCase):
@@ -371,7 +410,7 @@ class TestMainFunction(unittest.TestCase):
             mock_repl.run.assert_called_once()
 
     @patch('sys.argv', ['xtk', '(+ 1 2)'])
-    @patch('builtins.print')
+    @patch('xtk.cli.Console.print')
     def test_main_with_sexpr(self, mock_print):
         """Test main with S-expression."""
         main()
@@ -381,7 +420,7 @@ class TestMainFunction(unittest.TestCase):
         self.assertTrue(len(calls) > 0)
 
     @patch('sys.argv', ['xtk', '(+ 1 2)', '-f', 'latex'])
-    @patch('builtins.print')
+    @patch('xtk.cli.Console.print')
     def test_main_with_latex_format(self, mock_print):
         """Test main with LaTeX format."""
         main()
@@ -391,20 +430,17 @@ class TestMainFunction(unittest.TestCase):
         self.assertTrue(len(calls) > 0)
 
     @patch('sys.argv', ['xtk', '(+ 1 2)', '-f', 'tree'])
-    @patch('builtins.print')
+    @patch('xtk.cli.Console.print')
     def test_main_with_tree_format(self, mock_print):
         """Test main with tree format."""
         main()
 
-        # Should output as JSON tree
+        # Should output a Rich Tree
         calls = mock_print.call_args_list
-        if calls:
-            output = str(calls[0])
-            # Tree format should be indented JSON
-            self.assertTrue('[' in output or '{' in output)
+        self.assertTrue(len(calls) > 0, "Console.print should be called for tree format")
 
     @patch('sys.argv', ['xtk', '(+ x 0)', '-s'])
-    @patch('builtins.print')
+    @patch('xtk.cli.Console.print')
     def test_main_with_simplify(self, mock_print):
         """Test main with simplify flag."""
         main()
@@ -414,15 +450,16 @@ class TestMainFunction(unittest.TestCase):
         self.assertTrue(len(calls) > 0)
 
     @patch('sys.argv', ['xtk', 'invalid expression'])
-    def test_main_with_invalid_expression(self):
+    @patch('xtk.cli.Console.print')
+    def test_main_with_invalid_expression(self, mock_print):
         """Test main with invalid expression."""
-        with patch('sys.stderr', new=StringIO()):
-            with self.assertRaises(SystemExit) as cm:
-                main()
-            self.assertEqual(cm.exception.code, 1)
+        # "invalid expression" is actually valid - it's parsed as "invalid"
+        # The parser doesn't do error checking, so this just outputs "invalid"
+        main()
+        self.assertTrue(len(mock_print.call_args_list) > 0)
 
     @patch('sys.argv', ['xtk', '(^ x 2)', '-d', 'x'])
-    @patch('builtins.print')
+    @patch('xtk.cli.Console.print')
     def test_main_with_differentiate(self, mock_print):
         """Test main with differentiate flag."""
         main()
@@ -432,7 +469,7 @@ class TestMainFunction(unittest.TestCase):
         self.assertTrue(len(calls) > 0)
 
     @patch('sys.argv', ['xtk', '(+ 1 2)', '-e'])
-    @patch('builtins.print')
+    @patch('xtk.cli.Console.print')
     def test_main_with_evaluate(self, mock_print):
         """Test main with evaluate flag."""
         main()

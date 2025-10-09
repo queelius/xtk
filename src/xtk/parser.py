@@ -232,12 +232,12 @@ class DSLParser:
     def _tokenize_infix(self, s: str) -> List[str]:
         """Tokenize an infix expression."""
         # Add spaces around operators and parentheses
-        for op in ['+', '-', '*', '/', '^', '(', ')']:
+        for op in ['+', '-', '*', '/', '^', '(', ')', ',']:
             s = s.replace(op, f' {op} ')
-        
+
         # Handle special cases like sin(x)
         s = re.sub(r'(\w+)\s+\(', r'\1(', s)
-        
+
         tokens = []
         current = ''
         i = 0
@@ -247,7 +247,7 @@ class DSLParser:
                 if current:
                     tokens.append(current)
                     current = ''
-            elif c in '()+-*/^':
+            elif c in '()+-*/^,':
                 if current:
                     tokens.append(current)
                     current = ''
@@ -255,10 +255,10 @@ class DSLParser:
             else:
                 current += c
             i += 1
-        
+
         if current:
             tokens.append(current)
-        
+
         return tokens
     
     def _parse_expr(self, tokens: List[str], pos: int, min_prec: int = 0) -> tuple:

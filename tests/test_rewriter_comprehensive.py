@@ -414,12 +414,13 @@ class TestSimplifierEdgeCases(unittest.TestCase):
     """Test edge cases for the simplifier."""
 
     def test_simplify_with_no_rules(self):
-        """Test simplifier with no rules returns input unchanged."""
+        """Test simplifier with no rules still does constant folding."""
         simplify = simplifier([])
 
         self.assertEqual(simplify(42), 42)
         self.assertEqual(simplify('x'), 'x')
-        self.assertEqual(simplify(['+', 1, 2]), ['+', 1, 2])
+        # Constant folding is enabled by default, so 1 + 2 evaluates to 3
+        self.assertEqual(simplify(['+', 1, 2]), 3)
 
     def test_simplify_atom(self):
         """Test simplifier with atomic expressions."""

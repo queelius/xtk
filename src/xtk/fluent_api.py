@@ -57,7 +57,10 @@ class Expression:
                 return str(e)
             elif isinstance(e, str):
                 return e
-            elif isinstance(e, list) and e:
+            elif isinstance(e, list):
+                if not e:
+                    return "()"
+                # Handle non-empty lists
                 op = e[0]
                 if op == '+':
                     return ' + '.join(latexify(arg) for arg in e[1:])
@@ -82,7 +85,118 @@ class Expression:
             return str(e)
         
         return latexify(self.expr)
-    
+
+    def to_ascii(self) -> List[str]:
+        """
+        Convert expression to ASCII art representation.
+
+        Returns:
+            List of strings representing lines of ASCII art
+        """
+        def ascii_art(e):
+            """Convert expression to ASCII art lines."""
+            if isinstance(e, (int, float)):
+                return [str(e)]
+            elif isinstance(e, str):
+                return [e]
+            elif isinstance(e, list) and e:
+                op = e[0]
+
+                # Division/Fraction - render as numerator over denominator
+                if op == '/' and len(e) == 3:
+                    num_lines = ascii_art(e[1])
+                    den_lines = ascii_art(e[2])
+                    width = max(max(len(line) for line in num_lines),
+                               max(len(line) for line in den_lines))
+
+                    # Center numerator and denominator
+                    centered_num = [line.center(width) for line in num_lines]
+                    centered_den = [line.center(width) for line in den_lines]
+
+                    # Add horizontal line
+                    return centered_num + ['─' * width] + centered_den
+
+                # Power/Exponent - render with superscript
+                elif op == '^' and len(e) == 3:
+                    base_lines = ascii_art(e[1])
+                    exp_lines = ascii_art(e[2])
+
+                    # For simple exponents, use Unicode superscripts
+                    exp_str = ''.join(exp_lines)
+                    if exp_str in '0123456789':
+                        # Map to Unicode superscripts
+                        superscript = str.maketrans('0123456789', '⁰¹²³⁴⁵⁶⁷⁸⁹')
+                        base_str = ''.join(base_lines)
+                        return [base_str + exp_str.translate(superscript)]
+                    else:
+                        # Use caret notation for complex exponents
+                        base_str = ''.join(base_lines)
+                        return [f"({base_str})^({exp_str})"]
+
+                # Derivative - render as d/dx notation
+                elif op == 'dd' and len(e) == 3:
+                    func_lines = ascii_art(e[1])
+                    var_lines = ascii_art(e[2])
+                    var_str = ''.join(var_lines)
+                    func_str = ''.join(func_lines)
+
+                    # Use fraction notation
+                    top = f"d({func_str})"
+                    bottom = f"d{var_str}"
+                    width = max(len(top), len(bottom))
+
+                    return [top.center(width), '─' * width, bottom.center(width)]
+
+                # Addition - render with + between terms
+                elif op == '+':
+                    terms = [ascii_art(arg) for arg in e[1:]]
+                    # Flatten single-line terms
+                    if all(len(t) == 1 for t in terms):
+                        return [' + '.join(''.join(t) for t in terms)]
+                    else:
+                        # For multi-line, just linearize
+                        return [' + '.join(''.join(t) for t in terms)]
+
+                # Subtraction
+                elif op == '-':
+                    if len(e) == 2:
+                        arg_lines = ascii_art(e[1])
+                        return ['-' + ''.join(arg_lines)]
+                    else:
+                        left = ascii_art(e[1])
+                        right = ascii_art(e[2])
+                        return [''.join(left) + ' - ' + ''.join(right)]
+
+                # Multiplication - render with · or *
+                elif op == '*':
+                    terms = [ascii_art(arg) for arg in e[1:]]
+                    if all(len(t) == 1 for t in terms):
+                        return [' · '.join(''.join(t) for t in terms)]
+                    else:
+                        return [' · '.join(''.join(t) for t in terms)]
+
+                # Trig functions
+                elif op in ('sin', 'cos', 'tan', 'exp', 'log', 'ln'):
+                    arg_lines = ascii_art(e[1])
+                    arg_str = ''.join(arg_lines)
+                    return [f"{op}({arg_str})"]
+
+                # Square root
+                elif op == 'sqrt' and len(e) == 2:
+                    arg_lines = ascii_art(e[1])
+                    arg_str = ''.join(arg_lines)
+                    return [f"√({arg_str})"]
+
+                # Generic function call
+                else:
+                    args = [ascii_art(arg) for arg in e[1:]]
+                    args_str = ', '.join(''.join(a) for a in args)
+                    return [f"{op}({args_str})"]
+
+            return [str(e)]
+
+        return ascii_art(self.expr)
+
     def copy(self) -> 'Expression':
         """Create a deep copy of this expression."""
         new_expr = Expression(deepcopy(self.expr))

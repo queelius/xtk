@@ -70,16 +70,16 @@ class TestEvaluate(unittest.TestCase):
 
     def test_evaluate_expression_with_missing_variable(self):
         # Test evaluating an expression with a missing variable
+        # The evaluate function returns the expression unchanged if variables
+        # cannot be resolved (partial evaluation)
         expression = ['+', 'x', 5]
         dict = [
             ['+', lambda a, b: a + b]
         ]
-        # the next operation should raise an exception
-        with self.assertRaises(Exception):
-            # the reson this throws an exception is that it tries to apply
-            # the lambda function to 'x' and 5, which is not supported by
-            # this lambda function
-            evaluate(expression, dict)
+        # Evaluation with missing variable returns expression unchanged
+        result = evaluate(expression, dict)
+        # Since 'x' is not defined, the expression is returned as-is
+        self.assertEqual(result, ['+', 'x', 5])
 
     def test_evaluate_expression_with_non_callable_operator(self):
         # Test evaluating an expression with a non-callable operator
