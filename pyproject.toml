@@ -11,7 +11,7 @@ xtk = ["rules/*.py", "py.typed"]
 
 [project]
 name = "xpression-tk"
-version = "0.2.0"
+version = "0.2.1"
 description = "A powerful symbolic expression toolkit for rule-based term rewriting"
 authors = [{ name = "Alex Towell", email = "lex@metafunctor.com" }]
 readme = "README.md"
