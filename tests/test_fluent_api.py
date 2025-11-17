@@ -495,24 +495,24 @@ class TestIntegrationFluentAPI(unittest.TestCase):
     def test_complete_workflow(self):
         """Test a complete symbolic computation workflow."""
         # Create an expression: (x + 1)^2
-        expr = E.power(E.add('x', 1), 2)
-        
+        expr = Expression(['^', ['+', 'x', 1], 2])
+
         # Add expansion rule
         expansion_rule = [
             ['^', ['+', ['?', 'a'], ['?', 'b']], 2],
-            ['+', ['+', ['^', [':', 'a'], 2], 
-                       ['*', 2, ['*', [':', 'a'], [':', 'b']]]], 
+            ['+', ['+', ['^', [':', 'a'], 2],
+                       ['*', 2, ['*', [':', 'a'], [':', 'b']]]],
                   ['^', [':', 'b'], 2]]
         ]
-        
+
         # Apply the workflow
         result = (expr
             .with_rules([expansion_rule])
             .simplify()
             .substitute('x', 'y'))
-        
+
         # Check that it expanded and substituted
-        # Should be y^2 + 2*y*1 + 1^2 form
+        # Should contain y somewhere in the expression
         self.assertIsInstance(result.expr, list)
         self.assertIn('y', str(result.expr))
     
@@ -530,16 +530,16 @@ class TestIntegrationFluentAPI(unittest.TestCase):
     
     def test_symbolic_to_numeric_workflow(self):
         """Test symbolic to numeric evaluation."""
-        # Create symbolic expression
-        expr = E.add(E.multiply('x', 'x'), E.multiply(2, 'x'), 1)
-        
+        # Create symbolic expression: x*x + 2*x + 1
+        expr = Expression(['+', ['*', 'x', 'x'], ['*', 2, 'x'], 1])
+
         # Evaluate at x = 3
         result = (expr
             .bind('x', 3)
             .bind('+', lambda *args: sum(args))
             .bind('*', lambda a, b: a * b)
             .evaluate())
-        
+
         # x^2 + 2x + 1 at x=3 should be 9 + 6 + 1 = 16
         self.assertEqual(result.expr, 16)
 

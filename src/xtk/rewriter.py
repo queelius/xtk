@@ -259,12 +259,15 @@ def match(pat: ExprType, exp: ExprType, dict_: DictType) -> DictType:
         return extend_dictionary(pat, exp, dict_) if variable(exp) else "failed"
         
     elif arbitrary_expression(pat):
-        return extend_dictionary(pat, exp, dict_)
-        
+        return extend_dictionary(pat, exp, dict_) if not callable(exp) else "failed"
+
     elif atom(exp) or callable(exp):
         return "failed"
-        
+
     else:  # Both are compound
+        # Check if either list is empty before calling car/cdr
+        if null(pat) or null(exp):
+            return "failed"
         submatch = match(car(pat), car(exp), dict_)
         return match(cdr(pat), cdr(exp), submatch)
 
@@ -403,7 +406,7 @@ def rewriter(the_rules: List[RuleType], step_logger: Optional[StepLogger] = None
     
     def try_constant_fold(exp):
         """Try to evaluate arithmetic on constant operands."""
-        if not compound(exp):
+        if not compound(exp) or null(exp):
             return exp
 
         op = car(exp)

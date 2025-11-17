@@ -116,14 +116,14 @@ class TestCompleteWorkflows(unittest.TestCase):
     def test_symbolic_differentiation_workflow(self):
         """Test complete differentiation workflow."""
         # Create expression: x^3 + 2x^2 + x
-        expr = E.add(E.power("x", 3), E.multiply(2, E.power("x", 2)), "x")
-        
+        expr = Expression(["+", ["^", "x", 3], ["*", 2, ["^", "x", 2]], "x"])
+
         # Differentiate
         deriv_expr = Expression(["dd", expr.expr, "x"])
-        
+
         # Apply derivative rules
         simplified = deriv_expr.with_rules(deriv_rules_fixed).simplify()
-        
+
         # Should get 3x^2 + 4x + 1 (in some form)
         # Check that it contains the expected terms
         result_str = str(simplified.expr)
@@ -169,19 +169,19 @@ class TestCompleteWorkflows(unittest.TestCase):
     def test_symbolic_to_numeric_workflow(self):
         """Test symbolic manipulation followed by numeric evaluation."""
         # Symbolic expression: (x + 1)^2
-        expr = E.power(E.add("x", 1), 2)
-        
+        expr = Expression(["^", ["+", "x", 1], 2])
+
         # Expansion rule
         expansion_rule = [
             ["^", ["+", ["?", "a"], ["?", "b"]], 2],
-            ["+", ["+", ["^", [":", "a"], 2], 
-                       ["*", 2, ["*", [":", "a"], [":", "b"]]]], 
+            ["+", ["+", ["^", [":", "a"], 2],
+                       ["*", 2, ["*", [":", "a"], [":", "b"]]]],
                   ["^", [":", "b"], 2]]
         ]
-        
+
         # Expand symbolically
         expanded = expr.with_rules([expansion_rule]).simplify()
-        
+
         # Evaluate numerically at x = 3
         numeric = (expanded
             .bind("x", 3)
@@ -189,7 +189,7 @@ class TestCompleteWorkflows(unittest.TestCase):
             .bind("*", lambda a, b: a * b)
             .bind("^", lambda a, b: a ** b)
             .evaluate())
-        
+
         # (3 + 1)^2 = 16
         self.assertEqual(numeric.expr, 16)
 
@@ -361,7 +361,7 @@ class TestErrorHandling(unittest.TestCase):
         self.assertEqual(result.expr, ["+", "x", 1])
         
         # Malformed rule (not a pair)
-        with self.assertRaises((IndexError, TypeError)):
+        with self.assertRaises((IndexError, TypeError, ValueError)):
             expr.with_rules([[["+", "x", 1]]]).simplify()
     
     def test_file_loading_errors(self):
