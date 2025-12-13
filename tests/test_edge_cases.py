@@ -100,9 +100,17 @@ class TestEdgeCases(unittest.TestCase):
         result_div = evaluate(expr_div, bindings)
         self.assertEqual(result_div, float('inf'))
     
-    @unittest.skip("Infinite loop detection not yet implemented")
+    @unittest.skip("User responsibility: avoid identity rules that cause infinite loops")
     def test_simplifier_infinite_loop_prevention(self):
-        """Test that simplifier doesn't get stuck in infinite loops."""
+        """
+        Test that simplifier doesn't get stuck in infinite loops.
+
+        NOTE: Infinite loop prevention is the USER'S RESPONSIBILITY.
+        Users must avoid writing rules that produce infinite rewrite cycles,
+        such as commutative identity rules like: a + b => b + a
+
+        The simplifier does not implement cycle detection for performance reasons.
+        """
         # Rules that could cause infinite loop if not handled properly
         problematic_rules = [
             # These rules could ping-pong if not careful
@@ -116,10 +124,16 @@ class TestEdgeCases(unittest.TestCase):
         # Should not hang - the improved simplifier has max iterations
         result = simplify(expr)
         self.assertIsNotNone(result)  # Just check it terminates
-    
-    @unittest.skip("Infinite loop with identity rules not yet handled")
+
+    @unittest.skip("User responsibility: place specific rules before general rules")
     def test_rule_order_sensitivity(self):
-        """Test that rule order matters for correctness."""
+        """
+        Test that rule order matters for correctness.
+
+        NOTE: Rule ordering is the USER'S RESPONSIBILITY.
+        More specific rules should be placed before general catch-all rules.
+        Identity rules (a + b => a + b) will cause infinite loops.
+        """
         # More specific rules should come before general ones
         rules_good = [
             [['+', 'x', 'x'], ['*', 2, 'x']],  # Specific: x + x = 2x

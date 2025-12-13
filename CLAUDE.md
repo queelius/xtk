@@ -179,6 +179,8 @@ GitHub Actions workflow (`.github/workflows/ci.yml`):
 3. **REPL History**: Stored in `~/.xtk_history` with readline support
 4. **Virtual Environment**: Makefile assumes `.venv/` for isolation
 5. **Entry Points**: Can run via `python -m xtk.cli` or `xtk` command after install
+6. **Empty List Handling**: `car()` raises ValueError on empty lists; code guards against this
+7. **Callable Rejection**: Pattern matching rejects callable objects in arbitrary expressions
 
 ## Common Gotchas
 
@@ -186,3 +188,5 @@ GitHub Actions workflow (`.github/workflows/ci.yml`):
 - Tests use `unittest.TestCase`, not bare pytest assertions
 - Pattern matching uses nested lists, not strings: `['+', 'x', 0]` not `"+ x 0"`
 - Makefile targets assume virtual environment exists at `.venv/`
+- `ExpressionBuilder` static methods (E.add, E.power) return Expression objects - don't nest them as arguments
+- Infinite loop detection for identity rules is not yet implemented (see skipped tests)

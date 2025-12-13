@@ -3,7 +3,7 @@
 limit_rules = [
     # Limit of a constant
     # lim_x->c a = a
-    [["lim", ["->", ["?c", "a"], ["?v", "x"]], ["?c", "a"]]
+    [["lim", ["->", ["?c", "a"], ["?v", "x"]], ["?c", "a"]],
         [":", "a"]], 
     
     # Limit of a variable

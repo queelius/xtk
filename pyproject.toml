@@ -2,27 +2,26 @@
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["xtk"]
-package-dir = { "" = "src" }
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools.package-data]
 xtk = ["rules/*.py", "py.typed"]
 
 [project]
 name = "xpression-tk"
-version = "0.2.1"
+version = "0.2.2"
 description = "A powerful symbolic expression toolkit for rule-based term rewriting"
 authors = [{ name = "Alex Towell", email = "lex@metafunctor.com" }]
 readme = "README.md"
 requires-python = ">=3.8"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 keywords = ["symbolic", "computation", "rewriting", "pattern-matching", "algebra", "calculus"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",

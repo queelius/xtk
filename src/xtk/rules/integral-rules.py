@@ -2,7 +2,7 @@
 integral_rules = [
     # Integral of a constant
     # int c dx = c * x
-    [["int", ["?c", "c"], ["?v", "x"]]
+    [["int", ["?c", "c"], ["?v", "x"]],
         ["*", [":", "c"], [":", "x"]]],
 
     # Integral of a variable
@@ -43,9 +43,9 @@ integral_rules = [
 
     # Numerical integration
     # int f(x) dx from a to b = sum(f(x_i) * delta_x)
-    # we must look to see if the funcgtion is defined
+    # we must look to see if the function is defined
     # in the environment
-    [["int", ["?", "f"], ["?c", "a"], ["?c", "b"]]
+    [["int", ["?", "f"], ["?c", "a"], ["?c", "b"]],
         [":", lambda f, a, b, env: integrate(f, a, b, env)]],
      
 ]
