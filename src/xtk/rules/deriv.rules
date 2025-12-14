@@ -1,0 +1,84 @@
+; Derivative rules for symbolic differentiation
+; Using the clean DSL syntax: pattern => skeleton
+; dd is the differentiation operator: (dd expr var)
+
+; ============================
+; Basic Rules
+; ============================
+
+; Derivative of a constant is 0
+@deriv-const: (dd ?c:const ?v:var) => 0
+
+; Derivative of a variable with respect to itself is 1
+@deriv-var-self: (dd ?x:var ?x:var) => 1
+
+; Derivative of a different variable is 0
+@deriv-var-other: (dd ?u:var ?v:var) => 0
+
+; ============================
+; Linear Rules
+; ============================
+
+; Sum rule: d(f + g)/dx = df/dx + dg/dx
+@sum-rule: (dd (+ ?f ?g) ?v:var) => (+ (dd :f :v) (dd :g :v))
+
+; Difference rule: d(f - g)/dx = df/dx - dg/dx
+@diff-rule: (dd (- ?f ?g) ?v:var) => (- (dd :f :v) (dd :g :v))
+
+; Constant multiple rule: d(c*f)/dx = c * df/dx
+@const-mult: (dd (* ?c:const ?f) ?v:var) => (* :c (dd :f :v))
+
+; ============================
+; Product and Quotient Rules
+; ============================
+
+; Product rule: d(f*g)/dx = f'*g + f*g'
+@product-rule: (dd (* ?f ?g) ?v:var) => (+ (* (dd :f :v) :g) (* :f (dd :g :v)))
+
+; Quotient rule: d(f/g)/dx = (f'*g - f*g')/g^2
+@quotient-rule: (dd (/ ?f ?g) ?v:var) => (/ (- (* (dd :f :v) :g) (* :f (dd :g :v))) (^ :g 2))
+
+; ============================
+; Power Rule
+; ============================
+
+; Power rule for variables: d(x^n)/dx = n*x^(n-1)
+@power-rule-var: (dd (^ ?x:var ?n:const) ?x:var) => (* :n (^ :x (- :n 1)))
+
+; General power rule: d(f^n)/dx = n*f^(n-1)*f'
+@power-rule-gen: (dd (^ ?f ?n:const) ?v:var) => (* (* :n (^ :f (- :n 1))) (dd :f :v))
+
+; ============================
+; Exponential and Logarithm
+; ============================
+
+; d(e^x)/dx = e^x
+@exp-rule-var: (dd (exp ?x:var) ?x:var) => (exp :x)
+
+; d(e^f)/dx = e^f * f'
+@exp-rule-gen: (dd (exp ?f) ?v:var) => (* (exp :f) (dd :f :v))
+
+; d(ln(x))/dx = 1/x
+@log-rule-var: (dd (log ?x:var) ?x:var) => (/ 1 :x)
+
+; d(ln(f))/dx = f'/f
+@log-rule-gen: (dd (log ?f) ?v:var) => (/ (dd :f :v) :f)
+
+; ============================
+; Trigonometric Functions
+; ============================
+
+; d(sin(x))/dx = cos(x)
+@sin-rule-var: (dd (sin ?x:var) ?x:var) => (cos :x)
+
+; d(sin(f))/dx = cos(f) * f'
+@sin-rule-gen: (dd (sin ?f) ?v:var) => (* (cos :f) (dd :f :v))
+
+; d(cos(x))/dx = -sin(x)
+@cos-rule-var: (dd (cos ?x:var) ?x:var) => (- 0 (sin :x))
+
+; d(cos(f))/dx = -sin(f) * f'
+@cos-rule-gen: (dd (cos ?f) ?v:var) => (- 0 (* (sin :f) (dd :f :v)))
+
+; d(tan(x))/dx = sec^2(x) = 1/cos^2(x)
+@tan-rule-var: (dd (tan ?x:var) ?x:var) => (/ 1 (^ (cos :x) 2))

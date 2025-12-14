@@ -4,7 +4,7 @@ xtk - Expression Toolkit
 A rules-based expression rewriting toolkit for symbolic computation.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.3"
 
 # Core rewriter functions
 from .rewriter import (
@@ -49,6 +49,17 @@ from .rule_loader import (
     merge_rules,
 )
 
+# Rule DSL (clean syntax for defining rules)
+from .rule_dsl import (
+    rule,
+    rules as dsl_rules,  # Renamed to avoid conflict with xtk.rules subpackage
+    parse_dsl as parse_rule_dsl,
+    format_dsl_rule,
+    format_dsl_expr,
+    load_dsl_rules,
+    ParsedRule,
+)
+
 # Rule utilities and explanations
 from .rule_utils import (
     RichRule,
@@ -62,6 +73,13 @@ from .explainer import (
     AnthropicProvider,
     OpenAIProvider,
     OllamaProvider,
+)
+
+# LLM Rule Inference
+from .llm_inferrer import (
+    LLMRuleInferrer,
+    InferredRule,
+    create_inferrer,
 )
 
 # CLI and REPL
@@ -113,6 +131,15 @@ __all__ = [
     "parse_rules",
     "merge_rules",
 
+    # Rule DSL
+    "rule",
+    "dsl_rules",
+    "parse_rule_dsl",
+    "format_dsl_rule",
+    "format_dsl_expr",
+    "load_dsl_rules",
+    "ParsedRule",
+
     # Rule utilities and explanations
     "RichRule",
     "normalize_rules",
@@ -122,6 +149,11 @@ __all__ = [
     "AnthropicProvider",
     "OpenAIProvider",
     "OllamaProvider",
+
+    # LLM Rule Inference
+    "LLMRuleInferrer",
+    "InferredRule",
+    "create_inferrer",
 
     # CLI
     "XTKRepl",

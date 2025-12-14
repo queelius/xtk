@@ -1,0 +1,75 @@
+; Algebraic simplification rules for xtk
+; Using the clean DSL syntax: pattern => skeleton
+
+; ============================
+; Identity Rules
+; ============================
+
+; Addition identities
+@add-zero-right: (+ ?x 0) => :x
+@add-zero-left: (+ 0 ?x) => :x
+
+; Multiplication identities
+@mul-one-right: (* ?x 1) => :x
+@mul-one-left: (* 1 ?x) => :x
+@mul-zero-right: (* ?x 0) => 0
+@mul-zero-left: (* 0 ?x) => 0
+
+; Division identities
+@div-one: (/ ?x 1) => :x
+@div-zero: (/ 0 ?x) => 0
+
+; Power identities
+@pow-one: (^ ?x 1) => :x
+@pow-zero: (^ ?x 0) => 1
+@one-pow: (^ 1 ?x) => 1
+
+; ============================
+; Cancellation Rules
+; ============================
+
+; Double negative
+@double-neg: (- 0 (- 0 ?x)) => :x
+
+; Subtraction as addition
+@sub-to-add: (- ?x ?y) => (+ :x (- 0 :y))
+
+; ============================
+; Combining Like Terms
+; ============================
+
+; a*x + b*x => (a+b)*x
+@combine-like: (+ (* ?a:const ?x) (* ?b:const ?x)) => (* (+ :a :b) :x)
+
+; ============================
+; Distributive Property
+; ============================
+
+; a * (x + y) => a*x + a*y
+@dist-left: (* ?a (+ ?x ?y)) => (+ (* :a :x) (* :a :y))
+
+; (x + y) * a => x*a + y*a
+@dist-right: (* (+ ?x ?y) ?a) => (+ (* :x :a) (* :y :a))
+
+; ============================
+; Power Rules
+; ============================
+
+; (x^a)^b => x^(a*b)
+@pow-pow: (^ (^ ?x ?a) ?b) => (^ :x (* :a :b))
+
+; x^a * x^b => x^(a+b)
+@pow-mul: (* (^ ?x ?a) (^ ?x ?b)) => (^ :x (+ :a :b))
+
+; x^a / x^b => x^(a-b)
+@pow-div: (/ (^ ?x ?a) (^ ?x ?b)) => (^ :x (- :a :b))
+
+; ============================
+; Square Root Rules
+; ============================
+
+; sqrt(x^2) => x (assuming x >= 0)
+@sqrt-sq: (sqrt (^ ?x 2)) => :x
+
+; sqrt(x)^2 => x
+@sq-sqrt: (^ (sqrt ?x) 2) => :x

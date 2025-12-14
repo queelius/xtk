@@ -6,11 +6,11 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-xtk = ["rules/*.py", "py.typed"]
+xtk = ["rules/*.py", "rules/*.rules", "py.typed"]
 
 [project]
 name = "xpression-tk"
-version = "0.2.2"
+version = "0.2.3"
 description = "A powerful symbolic expression toolkit for rule-based term rewriting"
 authors = [{ name = "Alex Towell", email = "lex@metafunctor.com" }]
 readme = "README.md"

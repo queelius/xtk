@@ -20,8 +20,8 @@ def load_rules(source: Union[str, Path, List]) -> List[RuleType]:
     Load rules from various sources.
 
     Args:
-        source: Can be a filepath (.json, .lisp, .py), a list of rules,
-                or a string containing rules
+        source: Can be a filepath (.json, .lisp, .py, .rules, .dsl, .xtk),
+                a list of rules, or a string containing rules
 
     Returns:
         List of [pattern, skeleton] rules
@@ -37,6 +37,11 @@ def load_rules(source: Union[str, Path, List]) -> List[RuleType]:
             # Handle Python files specially
             if path.suffix == '.py':
                 return load_python_rules(path)
+
+            # Handle DSL files
+            if path.suffix in ['.rules', '.dsl', '.xtk']:
+                from .rule_dsl import load_dsl_rules
+                return load_dsl_rules(path)
 
             with open(path, 'r') as f:
                 content = f.read()
